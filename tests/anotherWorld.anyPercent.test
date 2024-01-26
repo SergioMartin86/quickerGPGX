@@ -4,6 +4,6 @@
   "Initial State File": "",
   "Sequence File": "anotherWorld.anyPercent.sol",
   "Disable State Blocks": [ ],
-  "Controller 1 Type": "Gamepad",
+  "Controller 1 Type": "Gamepad3B",
   "Controller 2 Type": "None"
 }

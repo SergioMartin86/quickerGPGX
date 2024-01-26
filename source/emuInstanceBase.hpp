@@ -4,6 +4,10 @@
 #include <utils.hpp>
 #include "controller.hpp"
 
+extern "C"
+{
+  const char* gpgx_get_memdom(int which, void **area, int *size);
+}
 
 class EmuInstanceBase
 {
@@ -14,6 +18,20 @@ class EmuInstanceBase
 
   inline void advanceState(const std::string &move)
   {
+    bool isInputValid = _controller.parseInputString(move);
+    if (isInputValid == false) EXIT_WITH_ERROR("Move provided cannot be parsed: '%s'\n", move.c_str());
+
+    // Parsing power
+    if (_controller.getPowerButtonState() == true) EXIT_WITH_ERROR("Power button pressed, but not supported: '%s'\n", move.c_str());
+
+    // Parsing reset
+    if (_controller.getResetButtonState() == true) doSoftReset();
+
+    // Parsing Controllers
+    const auto controller1 = _controller.getController1Code();
+    const auto controller2 = _controller.getController2Code();
+
+    advanceStateImpl(controller1, controller2);
   }
 
   inline void setController1Type(const std::string& type)
@@ -21,7 +39,7 @@ class EmuInstanceBase
     bool isTypeRecognized = false;
 
     if (type == "None") { _controller.setController1Type(Controller::controller_t::none); isTypeRecognized = true; }
-    if (type == "Gamepad") { _controller.setController1Type(Controller::controller_t::gamepad); isTypeRecognized = true; }
+    if (type == "Gamepad3B") { _controller.setController1Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
 
     if (isTypeRecognized == false) EXIT_WITH_ERROR("Input type not recognized: '%s'\n", type.c_str());
   }
@@ -31,7 +49,7 @@ class EmuInstanceBase
     bool isTypeRecognized = false;
 
     if (type == "None") { _controller.setController2Type(Controller::controller_t::none); isTypeRecognized = true; }
-    if (type == "Gamepad") { _controller.setController2Type(Controller::controller_t::gamepad); isTypeRecognized = true; }
+    if (type == "Gamepad3B") { _controller.setController2Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
     
     if (isTypeRecognized == false) EXIT_WITH_ERROR("Input type not recognized: '%s'\n", type.c_str());
   }
@@ -42,6 +60,13 @@ class EmuInstanceBase
   {
     MetroHash128 hash;
     
+    // Getting RAM pointer and size
+    int size;
+    uint8_t* ram;
+    gpgx_get_memdom(0, (void**)&ram, &size);
+    hash.Update(ram, size);
+
+
     hash_t result;
     hash.Finalize(reinterpret_cast<uint8_t *>(&result));
     return result;
@@ -49,7 +74,6 @@ class EmuInstanceBase
 
   inline void enableRendering()
    {
-    
    };
 
   inline void disableRendering()

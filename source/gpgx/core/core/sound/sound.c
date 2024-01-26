@@ -101,8 +101,6 @@ void sound_init( void )
     fm_cycles_ratio = 72 * 15;
   }
 
-  /* Initialize PSG chip */
-  SN76489_Config(0, config.psg_preamp, config.psgBoostNoise, 0xff);
 }
 
 void sound_reset(void)
@@ -230,4 +228,104 @@ unsigned int fm_read(unsigned int cycles, unsigned int address)
 
   /* read FM status (YM2612 only) */
   return YM2612Read();
+}
+
+
+int sound_context_save(uint8 *state)
+{
+  int bufferptr = 0;
+  
+  if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
+  {
+#ifdef HAVE_YM3438_CORE
+    save_param(&config.ym3438, sizeof(config.ym3438));
+    if (config.ym3438)
+    {
+      save_param(&ym3438, sizeof(ym3438));
+      save_param(&ym3438_accm, sizeof(ym3438_accm));
+      save_param(&ym3438_sample, sizeof(ym3438_sample));
+      save_param(&ym3438_cycles, sizeof(ym3438_cycles));
+    }
+    else
+    {
+      bufferptr += YM2612SaveContext(state + sizeof(config.ym3438));
+    }
+#else
+    bufferptr = YM2612SaveContext(state);
+#endif
+  }
+  else
+  {
+#ifdef HAVE_OPLL_CORE
+    save_param(&config.opll, sizeof(config.opll));
+    if (config.opll)
+    {
+      save_param(&opll, sizeof(opll));
+      save_param(&opll_accm, sizeof(opll_accm));
+      save_param(&opll_sample, sizeof(opll_sample));
+      save_param(&opll_cycles, sizeof(opll_cycles));
+      save_param(&opll_status, sizeof(opll_status));
+    }
+    else
+#endif
+    {
+      save_param(YM2413GetContextPtr(),YM2413GetContextSize());
+    }
+  }
+
+
+  save_param(&fm_cycles_start,sizeof(fm_cycles_start));
+
+  return bufferptr;
+}
+
+int sound_context_load(uint8 *state)
+{
+  int bufferptr = 0;
+
+  if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
+  {
+#ifdef HAVE_YM3438_CORE
+    uint8 config_ym3438;
+    load_param(&config_ym3438, sizeof(config_ym3438));
+    if (config_ym3438)
+    {
+      load_param(&ym3438, sizeof(ym3438));
+      load_param(&ym3438_accm, sizeof(ym3438_accm));
+      load_param(&ym3438_sample, sizeof(ym3438_sample));
+      load_param(&ym3438_cycles, sizeof(ym3438_cycles));
+    }
+    else
+    {
+      bufferptr += YM2612LoadContext(state + sizeof(config_ym3438));
+    }
+#else
+    bufferptr = YM2612LoadContext(state);
+#endif
+  }
+  else
+  {
+#ifdef HAVE_OPLL_CORE
+    uint8 config_opll;
+    load_param(&config_opll, sizeof(config_opll));
+    if (config_opll)
+    {
+      load_param(&opll, sizeof(opll));
+      load_param(&opll_accm, sizeof(opll_accm));
+      load_param(&opll_sample, sizeof(opll_sample));
+      load_param(&opll_cycles, sizeof(opll_cycles));
+      load_param(&opll_status, sizeof(opll_status));
+    }
+    else
+#endif
+    {
+      load_param(YM2413GetContextPtr(),YM2413GetContextSize());
+    }
+  }
+
+
+  load_param(&fm_cycles_start,sizeof(fm_cycles_start));
+  fm_cycles_count = fm_cycles_start;
+
+  return bufferptr;
 }

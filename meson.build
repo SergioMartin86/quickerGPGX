@@ -24,7 +24,7 @@ quickerGPGXPlayerSrc = [
   executable('player',
     'source/player.cpp',
     quickerGPGXPlayerSrc,
-    cpp_args            : [ commonCompileArgs, '-DNCURSES' ],
+    cpp_args            : [ commonCompileArgs],
     dependencies        : [ gpgxDependency,
                             toolDependency,
                             dependency('sdl2'),

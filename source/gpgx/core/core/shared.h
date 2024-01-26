@@ -29,5 +29,6 @@
 #include "ggenie.h"
 #include "areplay.h"
 #include "cart_hw/svp/svp.h"
+#include "state.h"
 #endif /* _SHARED_H_ */
 

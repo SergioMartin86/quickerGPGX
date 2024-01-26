@@ -106,4 +106,7 @@ void write_vram_byte(int addr, uint8 val);
 void flush_vram_cache(void);
 void vdp_invalidate_full_cache(void);
 
+extern int vdp_context_save(uint8 *state);
+extern int vdp_context_load(uint8 *state);
+
 #endif /* _VDP_H_ */

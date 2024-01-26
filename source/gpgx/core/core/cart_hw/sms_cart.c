@@ -273,7 +273,7 @@ static const rominfo_t game_list[GAME_DATABASE_CNT] =
   {0xD29889AD, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Fantasy Zone: The Maze */
   {0xA4AC35D8, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Galaxy Force */
   {0x6C827520, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Galaxy Force (U) */
-  {0x1890F407, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Game Box Série Esportes Radicais (BR) */
+  {0x1890F407, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Game Box Sï¿½rie Esportes Radicais (BR) */
   {0xB746A6F5, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Global Defense */
   {0x91A0FC4E, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Global Defense [Proto] */
   {0x48651325, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Golfamania */
@@ -284,7 +284,7 @@ static const rominfo_t game_list[GAME_DATABASE_CNT] =
   {0xE8511B08, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Lord of The Sword */
   {0x0E333B6E, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Miracle Warriors - Seal of The Dark Lord */
   {0x301A59AA, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Miracle Warriors - Seal of The Dark Lord [Proto] */
-  {0x01D67C0B, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Mônica no Castelo do Dragão (BR) */
+  {0x01D67C0B, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Mï¿½nica no Castelo do Dragï¿½o (BR) */
   {0x5589D8D2, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Out Run */
   {0xE030E66C, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Parlour Games */
   {0xF97E9875, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Penguin Land */
@@ -299,7 +299,7 @@ static const rominfo_t game_list[GAME_DATABASE_CNT] =
   {0x1A390B93, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Tennis Ace */
   {0xAE920E4B, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Thunder Blade */
   {0x51BD14BE, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Time Soldiers */
-  {0x22CCA9BB, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Turma da Mônica em: O Resgate (BR) */
+  {0x22CCA9BB, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Turma da Mï¿½nica em: O Resgate (BR) */
   {0xB52D60C8, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Ultima IV */
   {0xDE9F8517, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Ultima IV [Proto] */
   {0xDFB0B161, 0, 1, SYSTEM_MS_GAMEPAD,  MAPPER_SEGA,   SYSTEM_SMS2,        REGION_USA}, /* Vigilante */
@@ -678,7 +678,7 @@ int sms_cart_region_detect(void)
   /* compute CRC */
   uint32 crc = crc32(0, cart.rom, cart.romsize);
 
-  /* Turma da Mônica em: O Resgate & Wonder Boy III enable FM support on japanese hardware only */
+  /* Turma da Mï¿½nica em: O Resgate & Wonder Boy III enable FM support on japanese hardware only */
   if (config.ym2413 && ((crc == 0x22CCA9BB) || (crc == 0x679E1676)))
   {
     return REGION_JAPAN_NTSC;
@@ -1321,4 +1321,96 @@ static unsigned char read_mapper_korea_8k(unsigned int address)
 static unsigned char read_mapper_default(unsigned int address)
 {
   return z80_readmap[address >> 10][address & 0x03FF];
+}
+
+
+int sms_cart_context_save(uint8 *state)
+{
+  int bufferptr = 0;
+
+  /* check if cartridge ROM is disabled */
+  if (io_reg[0x0E] & 0x40)
+  {
+    /* save Boot ROM mapper settings */
+    save_param(bios_rom.fcr, 4);
+  }
+  else
+  {
+    /* save cartridge mapper settings */
+    save_param(cart_rom.fcr, 4);
+  }
+
+  /* support for SG-1000 games with extra RAM */
+  if ((cart_rom.mapper == MAPPER_RAM_8K_EXT2) || (cart_rom.mapper == MAPPER_RAM_8K_EXT1))
+  {
+    /* 8KB extra RAM */
+    save_param(work_ram + 0x2000, 0x2000);
+  }
+  // else if (cart_rom.mapper == MAPPER_RAM_2K)
+  // {
+  //   /* 2KB extra RAM */
+  //   save_param(work_ram + 0x2000, 0x800);
+  // }
+
+  return bufferptr;
+}
+
+int sms_cart_context_load(uint8 *state)
+{
+  int bufferptr = 0;
+
+  /* check if cartridge ROM is disabled */
+  if (io_reg[0x0E] & 0x40)
+  {
+    /* load Boot ROM mapper settings */
+    load_param(bios_rom.fcr, 4);
+
+    /* set default cartridge ROM paging */
+    switch (cart_rom.mapper)
+    {
+      case MAPPER_SEGA:
+      case MAPPER_SEGA_X:
+        cart_rom.fcr[0] = 0;
+        cart_rom.fcr[1] = 0;
+        cart_rom.fcr[2] = 1;
+        cart_rom.fcr[3] = 2;
+        break;
+
+      case MAPPER_KOREA_8K:
+      case MAPPER_MSX:
+      case MAPPER_MSX_NEMESIS:
+
+      default:
+        cart_rom.fcr[0] = 0;
+        cart_rom.fcr[1] = 0;
+        cart_rom.fcr[2] = 1;
+        cart_rom.fcr[3] = 0;
+        break;
+    }
+  }
+  else
+  {
+    /* load cartridge mapper settings */
+    load_param(cart_rom.fcr, 4);
+
+    /* set default BIOS ROM paging (SEGA mapper by default) */
+    bios_rom.fcr[0] = 0;
+    bios_rom.fcr[1] = 0;
+    bios_rom.fcr[2] = 1;
+    bios_rom.fcr[3] = 2;
+  }
+
+  /* support for SG-1000 games with extra RAM */
+  if ((cart_rom.mapper == MAPPER_RAM_8K_EXT2) || (cart_rom.mapper == MAPPER_RAM_8K_EXT1))
+  {
+    /* 8KB extra RAM */
+    load_param(work_ram + 0x2000, 0x2000);
+  }
+  // else if (cart_rom.mapper == MAPPER_RAM_2K)
+  // {
+  //   /* 2KB extra RAM */
+  //   load_param(work_ram + 0x2000, 0x800);
+  // }
+
+  return bufferptr;
 }

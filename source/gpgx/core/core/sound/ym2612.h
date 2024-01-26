@@ -24,5 +24,7 @@ extern void YM2612Write(unsigned int a, unsigned int v);
 extern unsigned int YM2612Read(void);
 
 extern INT32 *ym2612_lfo_pm_table;
+extern int YM2612LoadContext(unsigned char *state);
+extern int YM2612SaveContext(unsigned char *state);
 
 #endif /* _YM2612_ */

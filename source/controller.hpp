@@ -12,7 +12,7 @@ class Controller
 {
 public:
 
-  enum controller_t { none, gamepad };
+  enum controller_t { none, gamepad3b };
 
   typedef uint16_t port_t;
 
@@ -65,7 +65,7 @@ public:
 
   private:
 
-  static bool parseGamePadInput(uint16_t& code, std::istringstream& ss)
+  static bool parseGamePad6BInput(uint16_t& code, std::istringstream& ss)
   {
     // Currently read character
     char c;
@@ -73,65 +73,97 @@ public:
     // Cleaning code
     code = 0;
 
-    // Up
     c = ss.get();
     if (c != '.' && c != 'U') return false;
     if (c == 'U') code |= INPUT_UP;
 
-    // Down
     c = ss.get();
     if (c != '.' && c != 'D') return false;
     if (c == 'D') code |= INPUT_DOWN;
 
-    // Left
     c = ss.get();
     if (c != '.' && c != 'L') return false;
     if (c == 'L') code |= INPUT_LEFT;
 
-    // Right
     c = ss.get();
     if (c != '.' && c != 'R') return false;
     if (c == 'R') code |= INPUT_RIGHT;
 
-    // Select
     c = ss.get();
     if (c != '.' && c != 'M') return false;
     if (c == 's') code |= INPUT_MODE;
 
-    // Start
     c = ss.get();
     if (c != '.' && c != 'S') return false;
     if (c == 'S') code |= INPUT_START;
 
-    // Y
     c = ss.get();
     if (c != '.' && c != 'A') return false;
     if (c == 'Y') code |= INPUT_A;
 
-    // B
     c = ss.get();
     if (c != '.' && c != 'B') return false;
     if (c == 'B') code |= INPUT_B;
 
-    // X
     c = ss.get();
     if (c != '.' && c != 'C') return false;
     if (c == 'X') code |= INPUT_C;
 
-    // A
     c = ss.get();
     if (c != '.' && c != 'X') return false;
     if (c == 'A') code |= INPUT_X;
 
-    // l
     c = ss.get();
     if (c != '.' && c != 'Y') return false;
     if (c == 'l') code |= INPUT_Y;
 
-    // r
     c = ss.get();
     if (c != '.' && c != 'Z') return false;
     if (c == 'r') code |= INPUT_Z;
+
+    return true;
+  }
+
+  static bool parseGamePad3BInput(uint16_t& code, std::istringstream& ss)
+  {
+    // Currently read character
+    char c;
+
+    // Cleaning code
+    code = 0;
+
+    c = ss.get();
+    if (c != '.' && c != 'U') return false;
+    if (c == 'U') code |= INPUT_UP;
+
+    c = ss.get();
+    if (c != '.' && c != 'D') return false;
+    if (c == 'D') code |= INPUT_DOWN;
+
+    c = ss.get();
+    if (c != '.' && c != 'L') return false;
+    if (c == 'L') code |= INPUT_LEFT;
+
+    c = ss.get();
+    if (c != '.' && c != 'R') return false;
+    if (c == 'R') code |= INPUT_RIGHT;
+
+    c = ss.get();
+    if (c != '.' && c != 'A') return false;
+    if (c == 'Y') code |= INPUT_A;
+
+    c = ss.get();
+    if (c != '.' && c != 'B') return false;
+    if (c == 'B') code |= INPUT_B;
+
+    c = ss.get();
+    if (c != '.' && c != 'C') return false;
+    if (c == 'X') code |= INPUT_C;
+
+    c = ss.get();
+    if (c != '.' && c != 'S') return false;
+    if (c == 'S') code |= INPUT_START;
+
 
     return true;
   }
@@ -148,13 +180,13 @@ public:
     if (ss.get() != '|') isValid = false;
 
     // If normal gamepad, parse its code now
-    if (type == controller_t::gamepad) 
+    if (type == controller_t::gamepad3b) 
     {
       // Storage for gamepad's code
       uint16_t code = 0;
 
       // Parsing gamepad code
-      isValid &= parseGamePadInput(code, ss);
+      isValid &= parseGamePad3BInput(code, ss);
 
       // Pushing input code into the port
       port = code;

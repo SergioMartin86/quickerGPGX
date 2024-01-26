@@ -4,6 +4,9 @@
 #include <utils.hpp>
 #include <string>
 #include <vector>
+#include <state.h>
+
+#define DUMMY_SIZE 1048576
 
 extern "C"
 { 
@@ -14,6 +17,8 @@ extern "C"
  void system_reset(void);
  void update_viewport(void);
  void gpgx_clear_sram(void);
+ void gpgx_advance(void);
+ void system_frame_gen(int);
 }
 
 class EmuInstance : public EmuInstanceBase
@@ -50,26 +55,35 @@ class EmuInstance : public EmuInstanceBase
   void deserializeFullState(const uint8_t *state) override
   {
     state_load(state);
+
+        printf("\n");
+     int size;
+    uint8_t* ram;
+    gpgx_get_memdom(0, (void**)&ram, &size);
+    for (size_t i = 0; i < 100; i++) printf("%2X ", ram[i]);
   }
 
   void serializeLiteState(uint8_t *state) const override
   {
-     state_save(state);
+     serializeFullState(state);
   }
 
   void deserializeLiteState(const uint8_t *state) override
   {
-    state_load(state);
+    deserializeFullState(state);
   }
 
   size_t getFullStateSize() const override
   {
-    return 0;
+    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
+    auto size = state_save(buffer);
+    free (buffer);
+    return size;
   }
 
   size_t getLiteStateSize() const override
   {
-   return 0;
+   return getFullStateSize();
   }
 
   void enableLiteStateBlock(const std::string& block)
@@ -97,6 +111,9 @@ class EmuInstance : public EmuInstanceBase
 
   virtual void advanceStateImpl(const Controller::port_t controller1, const Controller::port_t controller2)
   {
+     input.pad[0] = controller1;
+     input.pad[1] = controller2;
+     system_frame_gen(1);
   }
 
 };

@@ -27,6 +27,7 @@ gpgxSrc =  [
   './core/core/input_hw/activator.c',
   './core/core/z80/z80.c',
   './core/core/loadrom.c',
+  './core/core/state.c',
   './core/core/memz80.c',
   './core/core/mem68k.c',
   './core/core/cart_hw/sms_cart.c',

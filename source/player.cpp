@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
   program.add_argument("--controller1")
     .help("Specifies the controller 1 type.")
-    .default_value(std::string("Gamepad"));
+    .default_value(std::string("Gamepad3B"));
 
   program.add_argument("--controller2")
     .help("Specifies the controller 2 type.")

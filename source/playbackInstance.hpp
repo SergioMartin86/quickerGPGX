@@ -9,6 +9,14 @@
 
 #define _INVERSE_FRAME_RATE 66667
 
+extern "C"
+{
+  void system_frame_gen(int do_skip);
+  void update_viewport(void);
+  void gpgx_get_video(int *w, int *h, int *pitch, void **buffer);
+  void sdl_video_update();
+}
+
 struct stepData_t
 {
   std::string input;
@@ -25,9 +33,6 @@ class PlaybackInstance
    _emu(emu),
    _storeInterval(storeInterval)
   {
-    // Enabling emulation rendering
-    _emu->enableRendering();
-
     // Building sequence information
     for (size_t i = 0; i < sequence.size(); i++)
     {
@@ -66,6 +71,9 @@ class PlaybackInstance
 
     // Starting SDL window
     initSDLWindow();
+
+    // Enabling emulation rendering
+    sdl_video_update();
   }
 
   // Function to render frame
@@ -87,6 +95,9 @@ class PlaybackInstance
 
     // Updating image
     _emu->advanceState(getStateInput(newStepId == 0 ? 0 : newStepId-1));
+    
+    system_frame_gen(0);
+    sdl_video_update();
   }
 
   size_t getSequenceLength() const
