@@ -1,0 +1,12 @@
+*.nes
+*.bin
+*.sfc
+*.smc
+*.Identifier
+*.zip
+*.fds
+test.sol
+*.hash
+*.out
+*.sh
+
