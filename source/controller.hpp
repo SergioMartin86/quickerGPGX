@@ -12,7 +12,7 @@ class Controller
 {
 public:
 
-  enum controller_t { none, gamepad3b };
+  enum controller_t { none, gamepad3b, gamepad6b };
 
   typedef uint16_t port_t;
 
@@ -90,16 +90,8 @@ public:
     if (c == 'R') code |= INPUT_RIGHT;
 
     c = ss.get();
-    if (c != '.' && c != 'M') return false;
-    if (c == 's') code |= INPUT_MODE;
-
-    c = ss.get();
-    if (c != '.' && c != 'S') return false;
-    if (c == 'S') code |= INPUT_START;
-
-    c = ss.get();
     if (c != '.' && c != 'A') return false;
-    if (c == 'Y') code |= INPUT_A;
+    if (c == 'A') code |= INPUT_A;
 
     c = ss.get();
     if (c != '.' && c != 'B') return false;
@@ -107,19 +99,27 @@ public:
 
     c = ss.get();
     if (c != '.' && c != 'C') return false;
-    if (c == 'X') code |= INPUT_C;
+    if (c == 'C') code |= INPUT_C;
+
+    c = ss.get();
+    if (c != '.' && c != 'S') return false;
+    if (c == 'S') code |= INPUT_START;
 
     c = ss.get();
     if (c != '.' && c != 'X') return false;
-    if (c == 'A') code |= INPUT_X;
+    if (c == 'X') code |= INPUT_X;
 
     c = ss.get();
     if (c != '.' && c != 'Y') return false;
-    if (c == 'l') code |= INPUT_Y;
+    if (c == 'Y') code |= INPUT_Y;
 
     c = ss.get();
     if (c != '.' && c != 'Z') return false;
-    if (c == 'r') code |= INPUT_Z;
+    if (c == 'Z') code |= INPUT_Z;
+
+    c = ss.get();
+    if (c != '.' && c != 'M') return false;
+    if (c == 'M') code |= INPUT_MODE;
 
     return true;
   }
@@ -150,7 +150,7 @@ public:
 
     c = ss.get();
     if (c != '.' && c != 'A') return false;
-    if (c == 'Y') code |= INPUT_A;
+    if (c == 'A') code |= INPUT_A;
 
     c = ss.get();
     if (c != '.' && c != 'B') return false;
@@ -158,7 +158,7 @@ public:
 
     c = ss.get();
     if (c != '.' && c != 'C') return false;
-    if (c == 'X') code |= INPUT_C;
+    if (c == 'C') code |= INPUT_C;
 
     c = ss.get();
     if (c != '.' && c != 'S') return false;
@@ -187,6 +187,19 @@ public:
 
       // Parsing gamepad code
       isValid &= parseGamePad3BInput(code, ss);
+
+      // Pushing input code into the port
+      port = code;
+    }
+
+    // If 6b gamepad, parse its code now
+    if (type == controller_t::gamepad6b) 
+    {
+      // Storage for gamepad's code
+      uint16_t code = 0;
+
+      // Parsing gamepad code
+      isValid &= parseGamePad6BInput(code, ss);
 
       // Pushing input code into the port
       port = code;

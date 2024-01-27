@@ -55,12 +55,6 @@ class EmuInstance : public EmuInstanceBase
   void deserializeFullState(const uint8_t *state) override
   {
     state_load(state);
-
-        printf("\n");
-     int size;
-    uint8_t* ram;
-    gpgx_get_memdom(0, (void**)&ram, &size);
-    for (size_t i = 0; i < 100; i++) printf("%2X ", ram[i]);
   }
 
   void serializeLiteState(uint8_t *state) const override

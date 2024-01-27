@@ -57,6 +57,10 @@ class PlaybackInstance
 
       // Advance state based on the input received
       _emu->advanceState(step.input);
+
+      _emu->deserializeFullState(stateData);
+
+      _emu->advanceState(step.input);
     }
 
     // Adding last step with no input

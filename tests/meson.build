@@ -6,13 +6,12 @@ testTimeout = 240
 
 # Tests for copyrighted game roms (only for local testing or own CI runners)
 protectedTestSet = [ 
-  'princeOfPersia.anyPercent.test',
+  'anotherWorld.anyPercent.test',
+  'theLionKing.anyPercent.test',
 ]
 
 # Tests for open source free roms (for public cloud testing)
 openSourceTestSet = [
-  'theLastSuper.playaround.test',
-  'christmasCraze.playaround.test',
 ]
 
 # Creating test set based on whether copyrighted roms are to be used

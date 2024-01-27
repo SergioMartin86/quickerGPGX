@@ -24,7 +24,7 @@ quickerGPGXPlayerSrc = [
   executable('player',
     'source/player.cpp',
     quickerGPGXPlayerSrc,
-    cpp_args            : [ commonCompileArgs],
+    cpp_args            : [ commonCompileArgs, '-DNCURSES' ],
     dependencies        : [ gpgxDependency,
                             toolDependency,
                             dependency('sdl2'),
@@ -46,12 +46,12 @@ endif
 
 # Building tester tool for the original gpgx
 
-#gpgxTester = executable('gpgxTester',
-#  'source/tester.cpp',
-#  cpp_args            : [ commonCompileArgs, '-DPREVENT_RENDERING'  ],
-#  dependencies        : [ gpgxDependency, toolDependency ],
-#  include_directories : include_directories(['../extern/json'])
-#)
+gpgxTester = executable('gpgxTester',
+  'source/tester.cpp',
+  cpp_args            : [ commonCompileArgs, '-DPREVENT_RENDERING'  ],
+  dependencies        : [ gpgxDependency, toolDependency ],
+  include_directories : include_directories(['../extern/json'])
+)
 
 # Building tests
 #subdir('tests')

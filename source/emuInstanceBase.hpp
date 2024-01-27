@@ -40,6 +40,7 @@ class EmuInstanceBase
 
     if (type == "None") { _controller.setController1Type(Controller::controller_t::none); isTypeRecognized = true; }
     if (type == "Gamepad3B") { _controller.setController1Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
+    if (type == "Gamepad6B") { _controller.setController1Type(Controller::controller_t::gamepad6b); isTypeRecognized = true; }
 
     if (isTypeRecognized == false) EXIT_WITH_ERROR("Input type not recognized: '%s'\n", type.c_str());
   }
@@ -50,6 +51,7 @@ class EmuInstanceBase
 
     if (type == "None") { _controller.setController2Type(Controller::controller_t::none); isTypeRecognized = true; }
     if (type == "Gamepad3B") { _controller.setController2Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
+    if (type == "Gamepad6B") { _controller.setController2Type(Controller::controller_t::gamepad6b); isTypeRecognized = true; }
     
     if (isTypeRecognized == false) EXIT_WITH_ERROR("Input type not recognized: '%s'\n", type.c_str());
   }
