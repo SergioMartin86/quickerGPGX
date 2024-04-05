@@ -24,9 +24,9 @@ jobs:
     - name: Create build directory
       run: mkdir -p testbed/build
     - name: Run meson configuration
-      run: meson setup testbed/build -DonlyOpenSource=true
+      run: meson setup testbed/build testbed -DonlyOpenSource=true
     - name: Building project
-      run: ninja -C testbed/build
+      run: ninja compile -C testbed/build
     - name: Running tests
       run: ninja test -C testbed/build
     - uses: actions/upload-artifact@v4
