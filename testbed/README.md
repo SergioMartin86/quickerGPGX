@@ -1,7 +1,7 @@
 GPGX Compare
 --------------
 
-[![Build & Tests](https://github.com/SergioMartin86/quickerSnes9x/actions/workflows/make.yml/badge.svg)](https://github.com/SergioMartin86/quickerSnes9X/actions/workflows/make.yml)
+[![Build and Run Tests](https://github.com/TASEmulators/Genesis-Plus-GX/actions/workflows/make.yml/badge.svg)](https://github.com/TASEmulators/Genesis-Plus-GX/actions/workflows/make.yml)
 
 
 GPGX Compare is a repository for testing and benchmarking a possible improvement to the [Genesis Plus GX (gpgx)](https://github.com/ekeeke/Genesis-Plus-GX) core. The main aim is to improve the performance of headless re-recording for TASing and botting (See: [JaffarPlus](https://github.com/SergioMartin86/jaffarPlus)) purposes. It will be also be used as testbed for proposing and update to the GPGX core in [BizHawk](https://github.com/TASEmulators/BizHawk).
@@ -19,7 +19,8 @@ Improvements
 Credits
 ---------
 
-- gpgx is developed by ekeeke and others under open source free licenses. For more information see: https://github.com/ekeeke/Genesis-Plus-GX
+- GPGX Compare and the TASEmulators/GPGX core are maintained by eien86
+- The upstream GPGX core is developed by ekeeke and others under open source free licenses. For more information see: https://github.com/ekeeke/Genesis-Plus-GX
 
 All base code for this project was found under open source licenses, which I preserved in their corresponding files/folders. Any non-credited work is unintentional and shall be immediately rectfied.
 
