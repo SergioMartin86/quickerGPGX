@@ -1,0 +1,9 @@
+[submodule "extern/jaffarCommon"]
+	path = extern/jaffarCommon
+	url = https://github.com/SergioMartin86/jaffarCommon.git
+[submodule "source/base"]
+	path = source/base/core
+	url = https://github.com/ekeeke/Genesis-Plus-GX
+[submodule "core"]
+	path = source/new/core
+	url = https://github.com/SergioMartin86/Genesis-Plus-GX.git

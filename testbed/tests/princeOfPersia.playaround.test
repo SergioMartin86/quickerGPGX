@@ -1,0 +1,14 @@
+{
+  "Rom File": "roms/Prince_of_Persia_(UE)_[!].sms",
+  "Expected ROM SHA1": "BF0CDB664129B5548083DC0DDE5449AB5F1BCC3A",
+  "Initial State File": "",
+  "Disable State Blocks": [ ],
+  "Controller 1 Type": "Gamepad2B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

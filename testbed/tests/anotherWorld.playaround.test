@@ -1,0 +1,14 @@
+{
+  "Rom File": "roms/Another World (E) [!].bin",
+  "Expected ROM SHA1": "9D98D6817B3E3651837BB2692F7A2A60A608C055",
+  "Initial State File": "",
+  "Disable State Blocks": [ ],
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

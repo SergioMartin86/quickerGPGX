@@ -1,0 +1,14 @@
+{
+  "Rom File": "roms/Segapede (Prototype).md",
+  "Expected ROM SHA1": "3452959175FA7631AF01E8821CB8B8410F5FBB79",
+  "Initial State File": "",
+  "Disable State Blocks": [ ],
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}
