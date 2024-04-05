@@ -26,7 +26,7 @@ jobs:
     - name: Run meson configuration
       run: meson setup testbed/build testbed -DonlyOpenSource=true
     - name: Building project
-      run: ninja compile -C testbed/build
+      run: ninja -C testbed/build
     - name: Running tests
       run: ninja test -C testbed/build
     - uses: actions/upload-artifact@v4
