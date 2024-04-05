@@ -35,10 +35,9 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-#ifndef _HW_CDD_
-#define _HW_CDD_
+#pragma once
 
-#include "blip_buf.h"
+#include "../sound/blip_buf.h"
 
 #if defined(USE_LIBVORBIS)
 #include <vorbis/vorbisfile.h>
@@ -50,6 +49,11 @@
 #include "libchdr/src/chd.h"
 #include "libchdr/src/cdrom.h"
 #endif
+
+/* CD tracks type (CD-DA by default) */
+#define TYPE_AUDIO 0x00
+#define TYPE_MODE1 0x01
+#define TYPE_MODE2 0x02
 
 #define cdd scd.cdd_hw
 
@@ -73,7 +77,6 @@
 /* CD track */
 typedef struct
 {
-  cdStream *fd;
 #if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
   OggVorbis_File vf;
 #endif
@@ -91,15 +94,14 @@ typedef struct
   int end;
   int last;
   track_t tracks[100];
-  cdStream *sub;
 } toc_t; 
 
 #if defined(USE_LIBCHDR)
+
 /* CHD file */
 typedef struct
 {
-  chd_file *file;
-  uint8 *hunk;
+  uint8_t *hunk;
   int hunkbytes;
   int hunknum;
   int hunkofs;
@@ -109,34 +111,33 @@ typedef struct
 /* CDD hardware */
 typedef struct
 {
-  uint32 cycles;
-  uint32 latency;
+  uint32_t cycles;
+  uint32_t latency;
   int loaded;
   int index;
   int lba;
   int scanOffset;
-  uint16 fader[2];
-  uint8 status;
-  uint16 sectorSize;
+  uint16_t fader[2];
+  uint8_t status;
+  uint16_t sectorSize;
   toc_t toc;
 #if defined(USE_LIBCHDR)
   chd_t chd;
 #endif
-  int16 audio[2];
+  int16_t audio[2];
 } cdd_t; 
 
 /* Function prototypes */
 extern void cdd_init(int samplerate);
 extern void cdd_reset(void);
-extern int cdd_context_save(uint8 *state);
-extern int cdd_context_load(uint8 *state, char *version);
+extern int cdd_context_save(uint8_t *state);
+extern int cdd_context_load(uint8_t *state, char *version);
 extern int cdd_load(char *filename, char *header);
 extern void cdd_unload(void);
-extern void cdd_read_data(uint8 *dst, uint8 *subheader);
+extern void cdd_read_data(uint8_t *dst, uint8_t *subheader);
 extern void cdd_seek_audio(int index, int lba);
 extern void cdd_read_audio(unsigned int samples);
 extern void cdd_update_audio(unsigned int samples);
 extern void cdd_update(void);
 extern void cdd_process(void);
 
-#endif

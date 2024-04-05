@@ -37,8 +37,23 @@
  *
  ****************************************************************************************/
 
-#ifndef _GAMEPAD_H_
-#define _GAMEPAD_H_
+#pragma once
+
+#include <stdint.h>
+
+struct gamepad_t
+{
+  uint8_t State;
+  uint8_t Counter;
+  uint8_t Timeout;
+  uint32_t Latency;
+};
+
+struct flipflop_t
+{
+  uint8_t Latch;
+  uint8_t Counter;
+};
 
 /* Function prototypes */
 extern void gamepad_reset(int port);
@@ -59,4 +74,3 @@ extern unsigned char mastertap_2_read(void);
 extern void mastertap_1_write(unsigned char data, unsigned char mask);
 extern void mastertap_2_write(unsigned char data, unsigned char mask);
 
-#endif

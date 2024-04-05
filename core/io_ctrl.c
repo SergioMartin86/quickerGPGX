@@ -39,26 +39,24 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-#include "gamepad.h"
-#include "lightgun.h"
-#include "mouse.h"
-#include "activator.h"
-#include "xe_1ap.h"
-#include "teamplayer.h"
-#include "paddle.h"
-#include "sportspad.h"
-#include "graphic_board.h"
-
-uint8 io_reg[0x10];
-
-uint8 region_code = REGION_USA;
-
-static struct port_t
-{
-  void (*data_w)(unsigned char data, unsigned char mask);
-  unsigned char (*data_r)(void);
-} port[3];
+#include <config.h>
+#include "input_hw/gamepad.h"
+#include "input_hw/lightgun.h"
+#include "input_hw/mouse.h"
+#include "input_hw/activator.h"
+#include "input_hw/xe_1ap.h"
+#include "input_hw/teamplayer.h"
+#include "input_hw/paddle.h"
+#include "input_hw/sportspad.h"
+#include "input_hw/graphic_board.h"
+#include "input_hw/input.h"
+#include "z80/z80.h"
+#include "sound/psg.h"
+#include "system.h"
+#include "genesis.h"
+#include "vdp_ctrl.h"
+#include "io_ctrl.h"
+#include "state.h"
 
 static void dummy_write(unsigned char data, unsigned char mask)
 {

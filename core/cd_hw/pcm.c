@@ -35,11 +35,15 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-#include "shared.h"
+
+#include <config.h>
+#include <string.h>
+#include "../system.h"
+#include "../genesis.h"
+#include "../state.h"
+#include "pcm.h"
 
 #define PCM_SCYCLES_RATIO (384 * 4)
-
-#define pcm scd.pcm_hw
 
 void pcm_init(double clock, int samplerate)
 {
@@ -71,43 +75,6 @@ void pcm_reset(void)
 
   /* clear blip buffers */
   blip_clear(snd.blips[1]);
-}
-
-int pcm_context_save(uint8 *state)
-{
-  uint8 tmp8;
-  int bufferptr = 0;
-
-  tmp8 = (pcm.bank - pcm.ram) >> 12;
-
-  save_param(pcm.chan, sizeof(pcm.chan));
-  save_param(pcm.out, sizeof(pcm.out));
-  save_param(&tmp8, 1);
-  save_param(&pcm.enabled, sizeof(pcm.enabled));
-  save_param(&pcm.status, sizeof(pcm.status));
-  save_param(&pcm.index, sizeof(pcm.index));
-  save_param(pcm.ram, sizeof(pcm.ram));
-
-  return bufferptr;
-}
-
-int pcm_context_load(uint8 *state)
-{
-  uint8 tmp8;
-  int bufferptr = 0;
-
-  load_param(pcm.chan, sizeof(pcm.chan));
-  load_param(pcm.out, sizeof(pcm.out));
-
-  load_param(&tmp8, 1);
-  pcm.bank = &pcm.ram[(tmp8 & 0x0f) << 12];
-
-  load_param(&pcm.enabled, sizeof(pcm.enabled));
-  load_param(&pcm.status, sizeof(pcm.status));
-  load_param(&pcm.index, sizeof(pcm.index));
-  load_param(pcm.ram, sizeof(pcm.ram));
-
-  return bufferptr;
 }
 
 void pcm_run(unsigned int length)
@@ -398,10 +365,10 @@ unsigned char pcm_read(unsigned int address, unsigned int cycles)
 void pcm_ram_dma_w(unsigned int length)
 {
   /* CDC buffer source address */
-  uint16 src_index = cdc.dac.w & 0x3fff;
+  uint16_t src_index = cdc.dac.w & 0x3fff;
   
   /* PCM-RAM destination address*/
-  uint16 dst_index = (scd.regs[0x0a>>1].w << 2) & 0xfff;
+  uint16_t dst_index = (scd.regs[0x0a>>1].w << 2) & 0xfff;
   
   /* update DMA destination address */
   scd.regs[0x0a>>1].w += (length >> 2);

@@ -36,9 +36,13 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-T_SRAM sram;
+#include <zlib.h>
+#include <string.h>
+#include "../loadrom.h"
+#include "../macros.h"
+#include "../genesis.h"
+#include "../state.h"
+#include "sram.h"
 
 /****************************************************************************
  * A quick guide to external RAM on the Genesis

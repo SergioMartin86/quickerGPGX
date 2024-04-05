@@ -36,7 +36,13 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <string.h>
+#include "../genesis.h"
+#include "../cart_hw/sram.h"
+#include "../m68k/m68k.h"
+#include "../mem68k.h"
+#include "../membnk.h"
+#include "../state.h"
 
 /*--------------------------------------------------------------------------*/
 /* backup RAM cartridge (max. 512KB)                                        */
@@ -210,6 +216,7 @@ void cd_cart_init(void)
     /* RAM cartridge ID register (read-only) */
     for (i=0x40; i<0x60; i++)
     {
+      m68k.memory_map[0].target = MM_TARGET_NULL;
       m68k.memory_map[i].base    = NULL;
       m68k.memory_map[i].read8   = cart_id_read_byte;
       m68k.memory_map[i].read16  = cart_id_read_word;
@@ -222,6 +229,7 @@ void cd_cart_init(void)
     /* RAM cartridge memory */
     for (i=0x60; i<0x70; i++)
     {
+      m68k.memory_map[0].target = MM_TARGET_NULL;
       m68k.memory_map[i].base    = NULL;
       m68k.memory_map[i].read8   = cart_ram_read_byte;
       m68k.memory_map[i].read16  = cart_ram_read_word;
@@ -234,6 +242,7 @@ void cd_cart_init(void)
     /* RAM cartridge write protection register */
     for (i=0x70; i<0x80; i++)
     {
+      m68k.memory_map[0].target = MM_TARGET_NULL;
       m68k.memory_map[i].base    = NULL;
       m68k.memory_map[i].read8   = cart_prot_read_byte;
       m68k.memory_map[i].read16  = cart_prot_read_word;
@@ -253,6 +262,7 @@ void cd_cart_init(void)
     {
       for (i=0; i<0x40; i++)
       {
+        m68k.memory_map[i+0x40].target  = m68k.memory_map[i].target;
         m68k.memory_map[i+0x40].base    = m68k.memory_map[i].base;
         m68k.memory_map[i+0x40].read8   = m68k.memory_map[i].read8;
         m68k.memory_map[i+0x40].read16  = m68k.memory_map[i].read16;

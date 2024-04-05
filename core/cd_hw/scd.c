@@ -36,12 +36,18 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <string.h>
+#include "../system.h"
+#include "../genesis.h"
+#include "../m68k/m68k.h"
+#include "../mem68k.h"
+#include "../membnk.h"
+#include "../state.h"
 
 /*--------------------------------------------------------------------------*/
 /* Unused area (return open bus data, i.e prefetched instruction word)      */
 /*--------------------------------------------------------------------------*/
-static unsigned int s68k_read_bus_8(unsigned int address)
+unsigned int s68k_read_bus_8(unsigned int address)
 {
 #ifdef LOGERROR
   error("[SUB 68k] Unused read8 %08X (%08X)\n", address, s68k.pc);
@@ -50,23 +56,23 @@ static unsigned int s68k_read_bus_8(unsigned int address)
   return READ_BYTE(s68k.memory_map[((address)>>16)&0xff].base, (address) & 0xffff);
 }
 
-static unsigned int s68k_read_bus_16(unsigned int address)
+unsigned int s68k_read_bus_16(unsigned int address)
 {
 #ifdef LOGERROR
   error("[SUB 68k] Unused read16 %08X (%08X)\n", address, s68k.pc);
 #endif
   address = s68k.pc;
-  return *(uint16 *)(s68k.memory_map[((address)>>16)&0xff].base + ((address) & 0xffff));
+  return *(uint16_t *)(s68k.memory_map[((address)>>16)&0xff].base + ((address) & 0xffff));
 }
 
-static void s68k_unused_8_w(unsigned int address, unsigned int data)
+void s68k_unused_8_w(unsigned int address, unsigned int data)
 {
 #ifdef LOGERROR
   error("[SUB 68k] Unused write8 %08X = %02X (%08X)\n", address, data, s68k.pc);
 #endif
 }
 
-static void s68k_unused_16_w(unsigned int address, unsigned int data)
+void s68k_unused_16_w(unsigned int address, unsigned int data)
 {
 #ifdef LOGERROR
   error("[SUB 68k] Unused write16 %08X = %04X (%08X)\n", address, data, s68k.pc);
@@ -77,7 +83,7 @@ static void s68k_unused_16_w(unsigned int address, unsigned int data)
 /* Locked area (cause SUB-CPU to wait for /DTACK assertion)    */
 /*--------------------------------------------------------------------------*/
 
-static void s68k_lockup_w_8 (unsigned int address, unsigned int data)
+void s68k_lockup_w_8 (unsigned int address, unsigned int data)
 {
 #ifdef LOGERROR
   error ("[SUB 68k] Lockup write8 %08X = %02X (%08X)\n", address, data, s68k.pc);
@@ -85,7 +91,7 @@ static void s68k_lockup_w_8 (unsigned int address, unsigned int data)
   s68k_pulse_wait(address, 1);
 }
 
-static void s68k_lockup_w_16 (unsigned int address, unsigned int data)
+void s68k_lockup_w_16 (unsigned int address, unsigned int data)
 {
 #ifdef LOGERROR
   error ("[SUB 68k] Lockup write16 %08X = %04X (%08X)\n", address, data, s68k.pc);
@@ -93,7 +99,7 @@ static void s68k_lockup_w_16 (unsigned int address, unsigned int data)
   s68k_pulse_wait(address, 1);
 }
 
-static unsigned int s68k_lockup_r_8 (unsigned int address)
+unsigned int s68k_lockup_r_8 (unsigned int address)
 { 
 #ifdef LOGERROR
   error ("[SUB 68k] Lockup read8 %08X.b (%08X)\n", address, s68k.pc);
@@ -102,7 +108,7 @@ static unsigned int s68k_lockup_r_8 (unsigned int address)
   return 0xff;
 }
 
-static unsigned int s68k_lockup_r_16 (unsigned int address)
+unsigned int s68k_lockup_r_16 (unsigned int address)
 {
 #ifdef LOGERROR
   error ("[SUB 68k] Lockup read16 %08X.w (%08X)\n", address, s68k.pc);
@@ -114,18 +120,18 @@ static unsigned int s68k_lockup_r_16 (unsigned int address)
 /*--------------------------------------------------------------------------*/
 /* PRG-RAM DMA access                                                       */
 /*--------------------------------------------------------------------------*/
-void prg_ram_dma_w(unsigned int length)
+void prg_ram_cdc_dma_w(unsigned int length)
 {
-  uint16 data;
+  uint16_t data;
 
   /* 16-bit DMA only */
   unsigned int words = length >> 1;
 
   /* CDC buffer source address */
-  uint16 src_index = cdc.dac.w & 0x3ffe;
+  uint16_t src_index = cdc.dac.w & 0x3ffe;
 
   /* PRG-RAM destination address*/
-  uint32 dst_index = (scd.regs[0x0a>>1].w << 3) & 0x7fffe;
+  uint32_t dst_index = (scd.regs[0x0a>>1].w << 3) & 0x7fffe;
 
   /* update DMA destination address */
   scd.regs[0x0a>>1].w += (words >> 2);
@@ -140,7 +146,7 @@ void prg_ram_dma_w(unsigned int length)
     data = READ_WORD(cdc.ram, src_index);
 
     /* write 16-bit word to PRG-RAM */
-    *(uint16 *)(scd.prg_ram + dst_index) = data ;
+    *(uint16_t *)(scd.prg_ram + dst_index) = data ;
 
     /* increment CDC buffer source address */
     src_index = (src_index + 2) & 0x3ffe;
@@ -153,7 +159,7 @@ void prg_ram_dma_w(unsigned int length)
 /*--------------------------------------------------------------------------*/
 /* PRG-RAM write protected area                                             */
 /*--------------------------------------------------------------------------*/
-static void prg_ram_write_byte(unsigned int address, unsigned int data)
+void prg_ram_write_byte(unsigned int address, unsigned int data)
 {
   address &= 0x7ffff;
   if (address >= (scd.regs[0x02>>1].byte.h << 9))
@@ -166,12 +172,12 @@ static void prg_ram_write_byte(unsigned int address, unsigned int data)
 #endif
 }
 
-static void prg_ram_write_word(unsigned int address, unsigned int data)
+void prg_ram_write_word(unsigned int address, unsigned int data)
 {
   address &= 0x7fffe;
   if (address >= (scd.regs[0x02>>1].byte.h << 9))
   {
-    *(uint16 *)(scd.prg_ram + address) = data;
+    *(uint16_t *)(scd.prg_ram + address) = data;
     return;
   }
 #ifdef LOGERROR
@@ -182,7 +188,7 @@ static void prg_ram_write_word(unsigned int address, unsigned int data)
 /*--------------------------------------------------------------------------*/
 /* PRG-RAM bank mirrored access                                             */
 /*--------------------------------------------------------------------------*/
-static unsigned int prg_ram_z80_read_byte(unsigned int address)
+unsigned int prg_ram_z80_read_byte(unsigned int address)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -194,7 +200,7 @@ static unsigned int prg_ram_z80_read_byte(unsigned int address)
   return READ_BYTE(m68k.memory_map[offset].base, address & 0xffff);
 }
 
-static void prg_ram_z80_write_byte(unsigned int address, unsigned int data)
+void prg_ram_z80_write_byte(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -208,7 +214,7 @@ static void prg_ram_z80_write_byte(unsigned int address, unsigned int data)
   }
 }
 
-static unsigned int prg_ram_m68k_read_byte(unsigned int address)
+unsigned int prg_ram_m68k_read_byte(unsigned int address)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -220,7 +226,7 @@ static unsigned int prg_ram_m68k_read_byte(unsigned int address)
   return READ_BYTE(m68k.memory_map[offset].base, address & 0xffff);
 }
 
-static unsigned int prg_ram_m68k_read_word(unsigned int address)
+unsigned int prg_ram_m68k_read_word(unsigned int address)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -229,10 +235,10 @@ static unsigned int prg_ram_m68k_read_word(unsigned int address)
     return m68k.memory_map[offset].read16(address);
   }
 
-  return *(uint16 *)(m68k.memory_map[offset].base + (address & 0xffff));
+  return *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xffff));
 }
 
-static void prg_ram_m68k_write_byte(unsigned int address, unsigned int data)
+void prg_ram_m68k_write_byte(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -246,7 +252,7 @@ static void prg_ram_m68k_write_byte(unsigned int address, unsigned int data)
   }
 }
 
-static void prg_ram_m68k_write_word(unsigned int address, unsigned int data)
+void prg_ram_m68k_write_word(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x03;
 
@@ -256,14 +262,14 @@ static void prg_ram_m68k_write_word(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(m68k.memory_map[offset].base + (address & 0xffff)) = data;
+    *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xffff)) = data;
   }
 }
 
 /*--------------------------------------------------------------------------*/
 /* Word-RAM bank mirrored access                                            */
 /*--------------------------------------------------------------------------*/
-static unsigned int word_ram_z80_read_byte(unsigned int address)
+unsigned int word_ram_z80_read_byte(unsigned int address)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -275,7 +281,7 @@ static unsigned int word_ram_z80_read_byte(unsigned int address)
   return READ_BYTE(m68k.memory_map[offset].base, address & 0xffff);
 }
 
-static void word_ram_z80_write_byte(unsigned int address, unsigned int data)
+void word_ram_z80_write_byte(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -285,11 +291,11 @@ static void word_ram_z80_write_byte(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(m68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
+    *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
   }
 }
 
-static unsigned int word_ram_m68k_read_byte(unsigned int address)
+unsigned int word_ram_m68k_read_byte(unsigned int address)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -301,7 +307,7 @@ static unsigned int word_ram_m68k_read_byte(unsigned int address)
   return READ_BYTE(m68k.memory_map[offset].base, address & 0xffff);
 }
 
-static unsigned int word_ram_m68k_read_word(unsigned int address)
+unsigned int word_ram_m68k_read_word(unsigned int address)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -310,10 +316,10 @@ static unsigned int word_ram_m68k_read_word(unsigned int address)
     return m68k.memory_map[offset].read16(address);
   }
 
-  return *(uint16 *)(m68k.memory_map[offset].base + (address & 0xffff));
+  return *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xffff));
 }
 
-static void word_ram_m68k_write_byte(unsigned int address, unsigned int data)
+void word_ram_m68k_write_byte(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -323,11 +329,11 @@ static void word_ram_m68k_write_byte(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(m68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
+    *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
   }
 }
 
-static void word_ram_m68k_write_word(unsigned int address, unsigned int data)
+void word_ram_m68k_write_word(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x23;
 
@@ -337,11 +343,11 @@ static void word_ram_m68k_write_word(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(m68k.memory_map[offset].base + (address & 0xffff)) = data;
+    *(uint16_t *)(m68k.memory_map[offset].base + (address & 0xffff)) = data;
   }
 }
 
-static unsigned int word_ram_s68k_read_byte(unsigned int address)
+unsigned int word_ram_s68k_read_byte(unsigned int address)
 {
   int offset = (address >> 16) & 0x0f;
 
@@ -353,7 +359,7 @@ static unsigned int word_ram_s68k_read_byte(unsigned int address)
   return READ_BYTE(s68k.memory_map[offset].base, address & 0xffff);
 }
 
-static unsigned int word_ram_s68k_read_word(unsigned int address)
+unsigned int word_ram_s68k_read_word(unsigned int address)
 {
   int offset = (address >> 16) & 0x0f;
 
@@ -362,10 +368,10 @@ static unsigned int word_ram_s68k_read_word(unsigned int address)
     return s68k.memory_map[offset].read16(address);
   }
 
-  return *(uint16 *)(s68k.memory_map[offset].base + (address & 0xffff));
+  return *(uint16_t *)(s68k.memory_map[offset].base + (address & 0xffff));
 }
 
-static void word_ram_s68k_write_byte(unsigned int address, unsigned int data)
+void word_ram_s68k_write_byte(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x0f;
 
@@ -375,11 +381,11 @@ static void word_ram_s68k_write_byte(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(s68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
+    *(uint16_t *)(s68k.memory_map[offset].base + (address & 0xfffe)) = data | (data << 8);
   }
 }
 
-static void word_ram_s68k_write_word(unsigned int address, unsigned int data)
+void word_ram_s68k_write_word(unsigned int address, unsigned int data)
 {
   int offset = (address >> 16) & 0x0f;
 
@@ -389,14 +395,14 @@ static void word_ram_s68k_write_word(unsigned int address, unsigned int data)
   }
   else
   {
-    *(uint16 *)(s68k.memory_map[offset].base + (address & 0xffff)) = data;
+    *(uint16_t *)(s68k.memory_map[offset].base + (address & 0xffff)) = data;
   }
 }
 
 /*--------------------------------------------------------------------------*/
 /* internal backup RAM (8KB)                                                */
 /*--------------------------------------------------------------------------*/
-static unsigned int bram_read_byte(unsigned int address)
+unsigned int bram_read_byte(unsigned int address)
 {
   /* LSB only */
   if (address & 0x01)
@@ -407,12 +413,12 @@ static unsigned int bram_read_byte(unsigned int address)
   return 0xff;
 }
 
-static unsigned int bram_read_word(unsigned int address)
+unsigned int bram_read_word(unsigned int address)
 {
   return (scd.bram[(address >> 1) & 0x1fff] | 0xff00);
 }
 
-static void bram_write_byte(unsigned int address, unsigned int data)
+void bram_write_byte(unsigned int address, unsigned int data)
 {
   /* LSB only */
   if (address & 0x01)
@@ -421,7 +427,7 @@ static void bram_write_byte(unsigned int address, unsigned int data)
   }
 }
 
-static void bram_write_word(unsigned int address, unsigned int data)
+void bram_write_word(unsigned int address, unsigned int data)
 {
   scd.bram[(address >> 1) & 0x1fff] = data & 0xff;
 }
@@ -430,7 +436,7 @@ static void bram_write_word(unsigned int address, unsigned int data)
 /* SUB-CPU polling detection and MAIN-CPU synchronization                   */
 /*--------------------------------------------------------------------------*/
 
-static void s68k_poll_detect(unsigned int reg_mask)
+void s68k_poll_detect(unsigned int reg_mask)
 {
   /* detect SUB-CPU register polling */
   if (s68k.poll.detected & reg_mask)
@@ -470,7 +476,7 @@ static void s68k_poll_detect(unsigned int reg_mask)
   s68k.poll.pc = s68k.pc;
 }
 
-static void s68k_poll_sync(unsigned int reg_mask)
+void s68k_poll_sync(unsigned int reg_mask)
 {
   /* relative MAIN-CPU cycle counter */
   unsigned int cycles = (s68k.cycles * MCYCLES_PER_LINE) / SCYCLES_PER_LINE;
@@ -505,7 +511,7 @@ static void s68k_poll_sync(unsigned int reg_mask)
   m68k.poll.detected &= ~reg_mask;
 }
 
-static void m68k_sync(void)
+void m68k_sync(void)
 {
   if (!m68k.stopped)
   {
@@ -527,7 +533,7 @@ static void m68k_sync(void)
 /* PCM chip & Gate-Array area                                               */
 /*--------------------------------------------------------------------------*/
 
-static unsigned int scd_read_byte(unsigned int address)
+unsigned int scd_read_byte(unsigned int address)
 {
   /* PCM area (8K) mirrored into $xF0000-$xF7FFF */
   if (!(address & 0x8000))
@@ -602,13 +608,13 @@ static unsigned int scd_read_byte(unsigned int address)
   if ((address >= 0x50) && (address <= 0x57))
   {
     /* shifted 4-bit input (xxxx00) */
-    uint8 bits = (scd.regs[0x4e>>1].w >> (((address & 6) ^ 6) << 1)) << 2;
+    uint8_t bits = (scd.regs[0x4e>>1].w >> (((address & 6) ^ 6) << 1)) << 2;
 
     /* color code */
-    uint8 code = scd.regs[0x4c>>1].byte.l;
+    uint8_t code = scd.regs[0x4c>>1].byte.l;
     
     /* 16-bit font data (4 pixels = 16 bits) */
-    uint16 data = (code >> (bits & 4)) & 0x0f;
+    uint16_t data = (code >> (bits & 4)) & 0x0f;
 
     bits = bits >> 1;
     data = data | (((code >> (bits & 4)) << 4) & 0xf0);
@@ -646,7 +652,7 @@ static unsigned int scd_read_byte(unsigned int address)
   return scd.regs[address >> 1].byte.h;
 }
 
-static unsigned int scd_read_word(unsigned int address)
+unsigned int scd_read_word(unsigned int address)
 {
   /* PCM area (8K) mirrored into $xF0000-$xF7FFF */
   if (!(address & 0x8000))
@@ -695,13 +701,13 @@ static unsigned int scd_read_word(unsigned int address)
   if ((address >= 0x50) && (address <= 0x56))
   {
     /* shifted 4-bit input (xxxx00) */
-    uint8 bits = (scd.regs[0x4e>>1].w >> (((address & 6) ^ 6) << 1)) << 2;
+    uint8_t bits = (scd.regs[0x4e>>1].w >> (((address & 6) ^ 6) << 1)) << 2;
 
     /* color code */
-    uint8 code = scd.regs[0x4c>>1].byte.l;
+    uint8_t code = scd.regs[0x4c>>1].byte.l;
     
     /* 16-bit font data (4 pixels = 16 bits) */
-    uint16 data = (code >> (bits & 4)) & 0x0f;
+    uint16_t data = (code >> (bits & 4)) & 0x0f;
 
     bits = bits >> 1;
     data = data | (((code >> (bits & 4)) << 4) & 0xf0);
@@ -740,12 +746,12 @@ static unsigned int scd_read_word(unsigned int address)
   return scd.regs[address >> 1].w;
 }
 
-INLINE void word_ram_switch(uint8 mode)
+INLINE void word_ram_switch(uint8_t mode)
 {
   int i;
-  uint16 *ptr1 = (uint16 *)(scd.word_ram_2M);
-  uint16 *ptr2 = (uint16 *)(scd.word_ram[0]);
-  uint16 *ptr3 = (uint16 *)(scd.word_ram[1]);
+  uint16_t *ptr1 = (uint16_t *)(scd.word_ram_2M);
+  uint16_t *ptr2 = (uint16_t *)(scd.word_ram[0]);
+  uint16_t *ptr3 = (uint16_t *)(scd.word_ram[1]);
 
   if (mode & 0x04)
   {
@@ -788,6 +794,7 @@ INLINE void word_ram_switch(uint8 mode)
     /* MAIN-CPU: $200000-$21FFFF is mapped to 256K Word-RAM (lower 128K) */
     for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
     {
+      m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_2M;
       m68k.memory_map[i].base = scd.word_ram_2M + ((i & 0x03) << 16);
     }
 
@@ -802,9 +809,9 @@ INLINE void word_ram_switch(uint8 mode)
   }
 }
 
-static void scd_write_word(unsigned int address, unsigned int data);
+void scd_write_word(unsigned int address, unsigned int data);
 
-static void scd_write_byte(unsigned int address, unsigned int data)
+void scd_write_byte(unsigned int address, unsigned int data)
 {
   /* PCM area (8K) mirrored into $xF0000-$xF7FFF */
   if (!(address & 0x8000))
@@ -872,6 +879,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
             for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
             {
               /* Word-RAM 1 data mapped at $200000-$21FFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_1;
               m68k.memory_map[i].base = scd.word_ram[1] + ((i & 0x01) << 16);
             }
 
@@ -899,6 +907,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
             for (i=0x0c; i<0x0e; i++)
             {
               /* Word-RAM 0 data mapped at $0C0000-$0DFFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_0;
               s68k.memory_map[i].base = scd.word_ram[0] + ((i & 0x01) << 16);
             }
 
@@ -911,6 +920,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
             for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
             {
               /* Word-RAM 0 data mapped at $200000-$21FFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_0;
               m68k.memory_map[i].base = scd.word_ram[0] + ((i & 0x01) << 16);
             }
 
@@ -938,6 +948,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
             for (i=0x0c; i<0x0e; i++)
             {
               /* Word-RAM 1 data mapped at $0C0000-$0DFFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_1;
               s68k.memory_map[i].base = scd.word_ram[1] + ((i & 0x01) << 16);
             }
           }
@@ -1000,14 +1011,14 @@ static void scd_write_byte(unsigned int address, unsigned int data)
             }
 
             /* check if CDC DMA to 2M Word-RAM is running */
-            if (cdc.dma_w == word_ram_2M_dma_w)
+            if (cdc_dma_w == word_ram_2M_dma_w)
             {
               /* synchronize CDC DMA with SUB-CPU */
               cdc_dma_update(s68k.cycles);
 
               /* halt CDC DMA to 2M Word-RAM (if still running) */
-              cdc.halted_dma_w = cdc.dma_w;
-              cdc.dma_w = 0;
+              cdc_halted_dma_w = cdc_dma_w;
+              cdc_dma_w = 0;
             }
 
             /* Word-RAM is returned to MAIN-CPU */
@@ -1050,7 +1061,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
       scd.regs[0x04 >> 1].byte.h = data & 0x07;
 
       /* synchronize CDC DMA (if running) with SUB-CPU */
-      if (cdc.dma_w)
+      if (cdc_dma_w)
       {
         cdc_dma_update(s68k.cycles);
       }
@@ -1125,7 +1136,7 @@ static void scd_write_byte(unsigned int address, unsigned int data)
 
     default:
     {
-      uint16 reg_16 = address & 0x1fe;
+      uint16_t reg_16 = address & 0x1fe;
 
       /* SUB-CPU communication words */
       if ((reg_16 >= 0x20) && (reg_16 <= 0x2f))
@@ -1164,7 +1175,47 @@ static void scd_write_byte(unsigned int address, unsigned int data)
   }
 }
 
-static void scd_write_word(unsigned int address, unsigned int data)
+
+/*--------------------------------------------------------------------------*/
+/* PRG-RAM DMA access                                                       */
+/*--------------------------------------------------------------------------*/
+void prg_ram_dma_w(unsigned int length)
+{
+  uint16 data;
+
+  /* 16-bit DMA only */
+  unsigned int words = length >> 1;
+
+  /* CDC buffer source address */
+  uint16 src_index = cdc.dac.w & 0x3ffe;
+
+  /* PRG-RAM destination address*/
+  uint32 dst_index = (scd.regs[0x0a>>1].w << 3) & 0x7fffe;
+
+  /* update DMA destination address */
+  scd.regs[0x0a>>1].w += (words >> 2);
+
+  /* update DMA source address */
+  cdc.dac.w += (words << 1);
+
+  /* DMA transfer */
+  while (words--)
+  {
+    /* read 16-bit word from CDC RAM buffer (big-endian format) */
+    data = READ_WORD(cdc.ram, src_index);
+
+    /* write 16-bit word to PRG-RAM */
+    *(uint16 *)(scd.prg_ram + dst_index) = data ;
+
+    /* increment CDC buffer source address */
+    src_index = (src_index + 2) & 0x3ffe;
+
+    /* increment PRG-RAM destination address */
+    dst_index = (dst_index + 2) & 0x7fffe;
+  }
+}
+
+void scd_write_word(unsigned int address, unsigned int data)
 {
   /* PCM area (8K) mirrored into $xF0000-$xF7FFF */
   if (!(address & 0x8000))
@@ -1221,6 +1272,7 @@ static void scd_write_word(unsigned int address, unsigned int data)
             for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
             {
               /* Word-RAM 1 data mapped at $200000-$21FFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_1;
               m68k.memory_map[i].base = scd.word_ram[1] + ((i & 0x01) << 16);
             }
 
@@ -1248,6 +1300,7 @@ static void scd_write_word(unsigned int address, unsigned int data)
             for (i=0x0c; i<0x0e; i++)
             {
               /* Word-RAM 0 data mapped at $0C0000-$0DFFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_0;
               s68k.memory_map[i].base = scd.word_ram[0] + ((i & 0x01) << 16);
             }
 
@@ -1260,6 +1313,7 @@ static void scd_write_word(unsigned int address, unsigned int data)
             for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
             {
               /* Word-RAM 0 data mapped at $200000-$21FFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_0;
               m68k.memory_map[i].base = scd.word_ram[0] + ((i & 0x01) << 16);
             }
 
@@ -1287,6 +1341,7 @@ static void scd_write_word(unsigned int address, unsigned int data)
             for (i=0x0c; i<0x0e; i++)
             {
               /* Word-RAM 1 data mapped at $0C0000-$0DFFFF */
+              m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_1;
               s68k.memory_map[i].base = scd.word_ram[1] + ((i & 0x01) << 16);
             }
           }
@@ -1349,14 +1404,14 @@ static void scd_write_word(unsigned int address, unsigned int data)
             }
 
             /* check if CDC DMA to 2M Word-RAM is running */
-            if (cdc.dma_w == word_ram_2M_dma_w)
+            if (cdc_dma_w == word_ram_2M_dma_w)
             {
               /* synchronize CDC DMA with SUB-CPU */
               cdc_dma_update(s68k.cycles);
 
               /* halt CDC DMA to 2M Word-RAM (if still running) */
-              cdc.halted_dma_w = cdc.dma_w;
-              cdc.dma_w = 0;
+              cdc_halted_dma_w = cdc_dma_w;
+              cdc_dma_w = 0;
             }
 
             /* Word-RAM is returned to MAIN-CPU */
@@ -1399,7 +1454,7 @@ static void scd_write_word(unsigned int address, unsigned int data)
       scd.regs[0x04 >> 1].w = data & (0x0700 | cdc.ar_mask);
 
       /* synchronize CDC DMA (if running) with SUB-CPU */
-      if (cdc.dma_w)
+      if (cdc_dma_w)
       {
         cdc_dma_update(s68k.cycles);
       }
@@ -1596,6 +1651,7 @@ void scd_init(void)
       case 0x00:
       {
         /* $000000-$01FFFF (resp. $400000-$41FFFF): internal ROM (128KB), mirrored every 256KB up to $1FFFFF (resp. $5FFFFF) */
+        m68k.memory_map[i].target = MM_TARGET_SCD_BOOT_ROM;
         m68k.memory_map[i].base    = scd.bootrom + ((i & 0x01) << 16);
         m68k.memory_map[i].read8   = NULL;
         m68k.memory_map[i].read16  = NULL;
@@ -1609,6 +1665,7 @@ void scd_init(void)
       case 0x02:
       {
         /* $020000-$03FFFF (resp. $420000-$43FFFF): PRG-RAM (first 128KB bank), mirrored every 256KB up to $1FFFFF (resp. $5FFFFF) */
+        m68k.memory_map[i].target = MM_TARGET_SCD_PRG_RAM;
         m68k.memory_map[i].base = scd.prg_ram + ((i & 0x01) << 16);
 
         /* automatic mirrored range remapping when switching PRG-RAM banks */
@@ -1639,6 +1696,7 @@ void scd_init(void)
   for (i=base+0x20; i<base+0x40; i++)
   {
     /* $200000-$23FFFF (resp. $600000-$63FFFF): Word-RAM in 2M mode (256KB), mirrored up to $3FFFFF (resp. $7FFFFF) */
+    m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_2M;
     m68k.memory_map[i].base  = scd.word_ram_2M + ((i & 0x03) << 16);
 
     /* automatic mirrored range remapping when switching Word-RAM */
@@ -1681,6 +1739,7 @@ void scd_init(void)
       case 0x07:
       {
         /* $000000-$07FFFF (mirrored every 1MB): PRG-RAM (512KB) */
+        m68k.memory_map[i].target = MM_TARGET_SCD_PRG_RAM;
         s68k.memory_map[i].base    = scd.prg_ram + ((i & 0x07) << 16);
         s68k.memory_map[i].read8   = NULL;
         s68k.memory_map[i].read16  = NULL;
@@ -1697,6 +1756,7 @@ void scd_init(void)
       case 0x0b:
       {
         /* $080000-$0BFFFF (mirrored every 1MB): Word-RAM in 2M mode (256KB)*/
+        m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_2M;
         s68k.memory_map[i].base = scd.word_ram_2M + ((i & 0x03) << 16);
 
         /* automatic mirrored range remapping when switching Word-RAM */
@@ -1722,6 +1782,7 @@ void scd_init(void)
       case 0x0d:
       {
         /* $0C0000-$0DFFFF (mirrored every 1MB):  unused in 2M mode (?) */
+        m68k.memory_map[i].target = MM_TARGET_SCD_WORD_RAM_2M;
         s68k.memory_map[i].base = scd.word_ram_2M + ((i & 0x03) << 16);
 
         /* automatic mirrored range remapping when switching Word-RAM */
@@ -1745,6 +1806,7 @@ void scd_init(void)
       case 0x0e:
       {
         /* $FE0000-$FEFFFF (mirrored every 1MB): 8KB backup RAM */
+        m68k.memory_map[i].target = MM_TARGET_NULL;
         s68k.memory_map[i].base     = NULL;
         s68k.memory_map[i].read8    = bram_read_byte;
         s68k.memory_map[i].read16   = bram_read_word;
@@ -1756,6 +1818,7 @@ void scd_init(void)
       case 0x0f:
       {
         /* $FF0000-$FFFFFF (mirrored every 1MB): PCM hardware & SUB-CPU registers  */
+        m68k.memory_map[i].target = MM_TARGET_NULL;
         s68k.memory_map[i].base     = NULL;
         s68k.memory_map[i].read8    = scd_read_byte;
         s68k.memory_map[i].read16   = scd_read_word;
@@ -1771,7 +1834,7 @@ void scd_init(void)
   gfx_init();
 
   /* Initialize CD hardware master clock count per scanline */
-  scd.cycles_per_line = (uint32) (MCYCLES_PER_LINE * ((float)SCD_CLOCK / (float)system_clock));
+  scd.cycles_per_line = (uint32_t) (MCYCLES_PER_LINE * ((float)SCD_CLOCK / (float)system_clock));
 
   /* Clear RAM */
   memset(scd.prg_ram, 0x00, sizeof(scd.prg_ram));
@@ -1793,8 +1856,8 @@ void scd_reset(int hard)
     scd.dmna = 0;
 
     /* H-INT default vector */
-    *(uint16 *)(m68k.memory_map[scd.cartridge.boot].base + 0x70) = 0xFFFF;
-    *(uint16 *)(m68k.memory_map[scd.cartridge.boot].base + 0x72) = 0xFFFF;
+    *(uint16_t *)(m68k.memory_map[scd.cartridge.boot].base + 0x70) = 0xFFFF;
+    *(uint16_t *)(m68k.memory_map[scd.cartridge.boot].base + 0x72) = 0xFFFF;
 
     /* Power ON initial values (MAIN-CPU side) */
     scd.regs[0x00>>1].w = 0x0002;
@@ -1824,6 +1887,8 @@ void scd_reset(int hard)
     }
 
     /* reset PRG-RAM bank on MAIN-CPU side */
+    m68k.memory_map[scd.cartridge.boot + 0x02].target = MM_TARGET_SCD_PRG_RAM;
+    m68k.memory_map[scd.cartridge.boot + 0x03].target = MM_TARGET_SCD_PRG_RAM;
     m68k.memory_map[scd.cartridge.boot + 0x02].base = scd.prg_ram;
     m68k.memory_map[scd.cartridge.boot + 0x03].base = scd.prg_ram + 0x10000;
 
@@ -1975,7 +2040,7 @@ void scd_update(unsigned int cycles)
   while ((m68k.cycles < cycles) || (s68k.cycles < s68k_end_cycles));
 
   /* update CDC DMA processing (if running) */
-  if (cdc.dma_w)
+  if (cdc_dma_w)
   {
     cdc_dma_update(scd.cycles);
   }
@@ -2005,351 +2070,6 @@ void scd_end_frame(unsigned int cycles)
   /* reset CPU registers polling */
   m68k.poll.cycle = 0;
   s68k.poll.cycle = 0;
-}
-
-int scd_context_save(uint8 *state)
-{
-  uint16 tmp16;
-  uint32 tmp32;
-  int bufferptr = 0;
-
-  /* internal harware */
-  save_param(scd.regs, sizeof(scd.regs));
-  save_param(&scd.cycles, sizeof(scd.cycles));
-  save_param(&scd.stopwatch, sizeof(scd.stopwatch));
-  save_param(&scd.timer, sizeof(scd.timer));
-  save_param(&scd.pending, sizeof(scd.pending));
-  save_param(&scd.dmna, sizeof(scd.dmna));
-
-  /* GFX processor */
-  bufferptr += gfx_context_save(&state[bufferptr]);
-
-  /* CD Data controller */
-  bufferptr += cdc_context_save(&state[bufferptr]);
-
-  /* CD Drive processor */
-  bufferptr += cdd_context_save(&state[bufferptr]);
-
-  /* PCM chip */
-  bufferptr += pcm_context_save(&state[bufferptr]);
-
-  /* PRG-RAM */
-  save_param(scd.prg_ram, sizeof(scd.prg_ram));
-
-  /* Word-RAM */
-  if (scd.regs[0x03>>1].byte.l & 0x04)
-  {
-    /* 1M mode */
-    save_param(scd.word_ram, sizeof(scd.word_ram));
-  }
-  else
-  {
-    /* 2M mode */
-    save_param(scd.word_ram_2M, sizeof(scd.word_ram_2M));
-  }
-
-  /* MAIN-CPU & SUB-CPU polling */
-  save_param(&m68k.poll, sizeof(m68k.poll));
-  save_param(&s68k.poll, sizeof(s68k.poll));
-
-  /* H-INT default vector */
-  tmp16 = *(uint16 *)(m68k.memory_map[scd.cartridge.boot].base + 0x72);
-  save_param(&tmp16, 2);
-
-  /* SUB-CPU registers */
-  tmp32 = s68k_get_reg(M68K_REG_D0);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D1);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D2);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D3);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D4);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D5);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D6);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_D7);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A0);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A1);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A2);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A3);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A4);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A5);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A6);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_A7);  save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_PC);  save_param(&tmp32, 4);
-  tmp16 = s68k_get_reg(M68K_REG_SR);  save_param(&tmp16, 2); 
-  tmp32 = s68k_get_reg(M68K_REG_USP); save_param(&tmp32, 4);
-  tmp32 = s68k_get_reg(M68K_REG_ISP); save_param(&tmp32, 4);
-
-  /* SUB-CPU internal state */
-  save_param(&s68k.cycles, sizeof(s68k.cycles));
-  save_param(&s68k.int_level, sizeof(s68k.int_level));
-  save_param(&s68k.stopped, sizeof(s68k.stopped));
-
-  /* bootable MD cartridge */
-  if (scd.cartridge.boot)
-  {
-    bufferptr += md_cart_context_save(&state[bufferptr]);
-  }
-
-  return bufferptr;
-}
-
-int scd_context_load(uint8 *state, char *version)
-{
-  int i;
-  uint16 tmp16;
-  uint32 tmp32;
-  int bufferptr = 0;
-
-  /* internal harware */
-  load_param(scd.regs, sizeof(scd.regs));
-  load_param(&scd.cycles, sizeof(scd.cycles));
-  load_param(&scd.stopwatch, sizeof(scd.stopwatch));
-  load_param(&scd.timer, sizeof(scd.timer));
-  load_param(&scd.pending, sizeof(scd.pending));
-  load_param(&scd.dmna, sizeof(scd.dmna));
-
-  /* GFX processor */
-  bufferptr += gfx_context_load(&state[bufferptr]);
-
-  /* CD Data controller */
-  bufferptr += cdc_context_load(&state[bufferptr]);
-
-  /* CD Drive processor */
-  bufferptr += cdd_context_load(&state[bufferptr], version);
-
-  /* PCM chip */
-  bufferptr += pcm_context_load(&state[bufferptr]);
-
-  /* PRG-RAM */
-  load_param(scd.prg_ram, sizeof(scd.prg_ram));
-
-  /* PRG-RAM 128K bank mapped on MAIN-CPU side */
-  m68k.memory_map[scd.cartridge.boot + 0x02].base = scd.prg_ram + ((scd.regs[0x03>>1].byte.l & 0xc0) << 11);
-  m68k.memory_map[scd.cartridge.boot + 0x03].base = m68k.memory_map[scd.cartridge.boot + 0x02].base + 0x10000;
-
-  /* PRG-RAM can only be accessed from MAIN 68K & Z80 if SUB-CPU is halted (Dungeon Explorer USA version) */
-  if ((scd.regs[0x00].byte.l & 0x03) != 0x01)
-  {
-    m68k.memory_map[scd.cartridge.boot + 0x02].read8   = m68k.memory_map[scd.cartridge.boot + 0x03].read8   = NULL;
-    m68k.memory_map[scd.cartridge.boot + 0x02].read16  = m68k.memory_map[scd.cartridge.boot + 0x03].read16  = NULL;
-    m68k.memory_map[scd.cartridge.boot + 0x02].write8  = m68k.memory_map[scd.cartridge.boot + 0x03].write8  = NULL;
-    m68k.memory_map[scd.cartridge.boot + 0x02].write16 = m68k.memory_map[scd.cartridge.boot + 0x03].write16 = NULL;
-    zbank_memory_map[scd.cartridge.boot + 0x02].read   = zbank_memory_map[scd.cartridge.boot + 0x03].read   = NULL;
-    zbank_memory_map[scd.cartridge.boot + 0x02].write  = zbank_memory_map[scd.cartridge.boot + 0x03].write  = NULL;
-  }
-  else
-  {
-    m68k.memory_map[scd.cartridge.boot + 0x02].read8   = m68k.memory_map[scd.cartridge.boot + 0x03].read8   = m68k_read_bus_8;
-    m68k.memory_map[scd.cartridge.boot + 0x02].read16  = m68k.memory_map[scd.cartridge.boot + 0x03].read16  = m68k_read_bus_16;
-    m68k.memory_map[scd.cartridge.boot + 0x02].write8  = m68k.memory_map[scd.cartridge.boot + 0x03].write8  = m68k_unused_8_w;
-    m68k.memory_map[scd.cartridge.boot + 0x02].write16 = m68k.memory_map[scd.cartridge.boot + 0x03].write16 = m68k_unused_16_w;
-    zbank_memory_map[scd.cartridge.boot + 0x02].read   = zbank_memory_map[scd.cartridge.boot + 0x03].read   = zbank_unused_r;
-    zbank_memory_map[scd.cartridge.boot + 0x02].write  = zbank_memory_map[scd.cartridge.boot + 0x03].write  = zbank_unused_w;
-  }
-
-  /* Word-RAM */
-  if (scd.regs[0x03>>1].byte.l & 0x04)
-  {
-    /* 1M Mode */
-    load_param(scd.word_ram, sizeof(scd.word_ram));
-
-    if (scd.regs[0x03>>1].byte.l & 0x01)
-    {
-      /* Word-RAM 1 assigned to MAIN-CPU */
-      for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
-      {
-        /* Word-RAM 1 data mapped at $200000-$21FFFF */
-        m68k.memory_map[i].base = scd.word_ram[1] + ((i & 0x01) << 16);
-        m68k.memory_map[i].read8   = NULL;
-        m68k.memory_map[i].read16  = NULL;
-        m68k.memory_map[i].write8  = NULL;
-        m68k.memory_map[i].write16 = NULL;
-        zbank_memory_map[i].read   = NULL;
-        zbank_memory_map[i].write  = NULL;
-      }
-
-      for (i=scd.cartridge.boot+0x22; i<scd.cartridge.boot+0x24; i++)
-      {
-        /* VRAM cell image mapped at $220000-$23FFFF */
-        m68k.memory_map[i].read8   = cell_ram_1_read8;
-        m68k.memory_map[i].read16  = cell_ram_1_read16;
-        m68k.memory_map[i].write8  = cell_ram_1_write8;
-        m68k.memory_map[i].write16 = cell_ram_1_write16;
-        zbank_memory_map[i].read   = cell_ram_1_read8;
-        zbank_memory_map[i].write  = cell_ram_1_write8;
-      }
-
-      /* Word-RAM 0 assigned to SUB-CPU */
-      for (i=0x08; i<0x0c; i++)
-      {
-        /* DOT image mapped at $080000-$0BFFFF */
-        s68k.memory_map[i].read8   = dot_ram_0_read8;
-        s68k.memory_map[i].read16  = dot_ram_0_read16;
-        s68k.memory_map[i].write8  = dot_ram_0_write8;
-        s68k.memory_map[i].write16 = dot_ram_0_write16;
-      }
-
-      for (i=0x0c; i<0x0e; i++)
-      {
-        /* Word-RAM 0 data mapped at $0C0000-$0DFFFF */
-        s68k.memory_map[i].base    = scd.word_ram[0] + ((i & 0x01) << 16);
-        s68k.memory_map[i].read8   = NULL;
-        s68k.memory_map[i].read16  = NULL;
-        s68k.memory_map[i].write8  = NULL;
-        s68k.memory_map[i].write16 = NULL;
-      }
-    }
-    else
-    {
-      /* Word-RAM 0 assigned to MAIN-CPU */
-      for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x22; i++)
-      {
-        /* Word-RAM 0 data mapped at $200000-$21FFFF */
-        m68k.memory_map[i].base = scd.word_ram[0] + ((i & 0x01) << 16);
-        m68k.memory_map[i].read8   = NULL;
-        m68k.memory_map[i].read16  = NULL;
-        m68k.memory_map[i].write8  = NULL;
-        m68k.memory_map[i].write16 = NULL;
-        zbank_memory_map[i].read   = NULL;
-        zbank_memory_map[i].write  = NULL;
-      }
-
-      for (i=scd.cartridge.boot+0x22; i<scd.cartridge.boot+0x24; i++)
-      {
-        /* VRAM cell image mapped at $220000-$23FFFF */
-        m68k.memory_map[i].read8   = cell_ram_0_read8;
-        m68k.memory_map[i].read16  = cell_ram_0_read16;
-        m68k.memory_map[i].write8  = cell_ram_0_write8;
-        m68k.memory_map[i].write16 = cell_ram_0_write16;
-        zbank_memory_map[i].read   = cell_ram_0_read8;
-        zbank_memory_map[i].write  = cell_ram_0_write8;
-      }
-
-      /* Word-RAM 1 assigned to SUB-CPU */
-      for (i=0x08; i<0x0c; i++)
-      {
-        /* DOT image mapped at $080000-$0BFFFF */
-        s68k.memory_map[i].read8   = dot_ram_1_read8;
-        s68k.memory_map[i].read16  = dot_ram_1_read16;
-        s68k.memory_map[i].write8  = dot_ram_1_write8;
-        s68k.memory_map[i].write16 = dot_ram_1_write16;
-      }
-
-      for (i=0x0c; i<0x0e; i++)
-      {
-        /* Word-RAM 1 data mapped at $0C0000-$0DFFFF */
-        s68k.memory_map[i].base    = scd.word_ram[1] + ((i & 0x01) << 16);
-        s68k.memory_map[i].read8   = NULL;
-        s68k.memory_map[i].read16  = NULL;
-        s68k.memory_map[i].write8  = NULL;
-        s68k.memory_map[i].write16 = NULL;
-      }
-    }
-  }
-  else
-  {
-    /* 2M mode */
-    load_param(scd.word_ram_2M, sizeof(scd.word_ram_2M));
-
-    /* check RET bit */
-    if (scd.regs[0x03>>1].byte.l & 0x01)
-    {
-      /* MAIN-CPU: $200000-$23FFFF is mapped to 256K Word-RAM */
-      for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x24; i++)
-      {
-        m68k.memory_map[i].base    = scd.word_ram_2M + ((i & 0x03) << 16);
-        m68k.memory_map[i].read8   = NULL;
-        m68k.memory_map[i].read16  = NULL;
-        m68k.memory_map[i].write8  = NULL;
-        m68k.memory_map[i].write16 = NULL;
-        zbank_memory_map[i].read   = NULL;
-        zbank_memory_map[i].write  = NULL;
-      }
-
-      /* SUB-CPU: access to Word-RAM at $080000-$0BFFFF is locked (/DTACK not asserted)  */
-      for (i=0x08; i<0x0c; i++)
-      {
-        s68k.memory_map[i].read8   = s68k_lockup_r_8;
-        s68k.memory_map[i].read16  = s68k_lockup_r_16;
-        s68k.memory_map[i].write8  = s68k_lockup_w_8;
-        s68k.memory_map[i].write16 = s68k_lockup_w_16;
-      }
-    }
-    else
-    {
-      /* MAIN-CPU: $200000-$23FFFF is unmapped */
-      for (i=scd.cartridge.boot+0x20; i<scd.cartridge.boot+0x24; i++)
-      {
-        m68k.memory_map[i].base    = scd.word_ram_2M + ((i & 0x03) << 16);
-        m68k.memory_map[i].read8   = m68k_read_bus_8;
-        m68k.memory_map[i].read16  = m68k_read_bus_16;
-        m68k.memory_map[i].write8  = m68k_unused_8_w;
-        m68k.memory_map[i].write16 = m68k_unused_16_w;
-        zbank_memory_map[i].read   = zbank_unused_r;
-        zbank_memory_map[i].write  = zbank_unused_w;
-      }
-
-      /* SUB-CPU: access to Word-RAM at $080000-$0BFFFF is unlocked (/DTACK asserted) */
-      for (i=0x08; i<0x0c; i++)
-      {
-        s68k.memory_map[i].read8   = NULL;
-        s68k.memory_map[i].read16  = NULL;
-        s68k.memory_map[i].write8  = NULL;
-        s68k.memory_map[i].write16 = NULL;
-      }
-    }
-
-    /* SUB-CPU: $0C0000-$0DFFFF is unmapped */
-    for (i=0x0c; i<0x0e; i++)
-    {
-      s68k.memory_map[i].read8   = s68k_read_bus_8;
-      s68k.memory_map[i].read16  = s68k_read_bus_16;
-      s68k.memory_map[i].write8  = s68k_unused_8_w;
-      s68k.memory_map[i].write16 = s68k_unused_16_w;
-    }
-  }
-
-  /* MAIN-CPU & SUB-CPU polling */
-  load_param(&m68k.poll, sizeof(m68k.poll));
-  load_param(&s68k.poll, sizeof(s68k.poll));
-
-  /* H-INT default vector */
-  load_param(&tmp16, 2);
-  *(uint16 *)(m68k.memory_map[scd.cartridge.boot].base + 0x72) = tmp16;
-
-  /* SUB-CPU registers */
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D0, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D1, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D2, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D3, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D4, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D5, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D6, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_D7, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A0, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A1, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A2, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A3, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A4, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A5, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A6, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_A7, tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_PC, tmp32);  
-  load_param(&tmp16, 2); s68k_set_reg(M68K_REG_SR, tmp16);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_USP,tmp32);
-  load_param(&tmp32, 4); s68k_set_reg(M68K_REG_ISP,tmp32);
-
-  /* SUB-CPU internal state */
-  load_param(&s68k.cycles, sizeof(s68k.cycles));
-  load_param(&s68k.int_level, sizeof(s68k.int_level));
-  load_param(&s68k.stopped, sizeof(s68k.stopped));
-
-  /* bootable MD cartridge hardware */
-  if (scd.cartridge.boot)
-  {
-    bufferptr += md_cart_context_load(&state[bufferptr]);
-  }
-
-  return bufferptr;
 }
 
 int scd_68k_irq_ack(int level)

@@ -36,31 +36,12 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <string.h>
+#include "../genesis.h"
+#include "../state.h"
+#include "../m68k/m68k.h"
 
-/* IFSTAT register bitmasks */
-#define BIT_DTEI  0x40
-#define BIT_DECI  0x20
-#define BIT_DTBSY 0x08
-#define BIT_DTEN  0x02
 
-/* IFCTRL register bitmasks */
-#define BIT_DTEIEN  0x40
-#define BIT_DECIEN  0x20
-#define BIT_DOUTEN  0x02
-
-/* CTRL0 register bitmasks */
-#define BIT_DECEN   0x80
-#define BIT_AUTORQ  0x10
-#define BIT_WRRQ    0x04
-
-/* CTRL1 register bitmasks */
-#define BIT_MODRQ   0x08
-#define BIT_FORMRQ  0x04
-#define BIT_SHDREN  0x01
-
-/* STAT3 register bitmask */
-#define BIT_VALST   0x80
 
 /* DMA transfer rate */
 /* min. 4 x SUB-CPU cycles (i.e 16 x SCD cycles) per byte (cf https://github.com/MiSTer-devel/MegaCD_MiSTer/tree/master/docs/mcd%20logs) */
@@ -112,7 +93,7 @@ void cdc_reset(void)
   cdc.cycles[0] = cdc.cycles[1] = 0;
 
   /* disable CDC DMA */
-  cdc.dma_w = cdc.halted_dma_w = 0;
+  cdc_dma_w = cdc_halted_dma_w = 0;
 
   /* reset CDC IRQ state */
   cdc.irq = 0;
@@ -128,120 +109,6 @@ void cdc_reset(void)
   }
 }
 
-int cdc_context_save(uint8 *state)
-{
-  uint8 tmp8;
-  int bufferptr = 0;
-
-  if (cdc.dma_w == pcm_ram_dma_w)
-  {
-    tmp8 = 1;
-  }
-  else if (cdc.dma_w == prg_ram_dma_w)
-  {
-    tmp8 = 2;
-  }
-  else if (cdc.dma_w == word_ram_0_dma_w)
-  {
-    tmp8 = 3;
-  }
-  else if (cdc.dma_w == word_ram_1_dma_w)
-  {
-    tmp8 = 4;
-  }
-  else if (cdc.dma_w == word_ram_2M_dma_w)
-  {
-    tmp8 = 5;
-  }
-  else if (cdc.halted_dma_w == prg_ram_dma_w)
-  {
-    tmp8 = 6;
-  }
-  else if (cdc.halted_dma_w == word_ram_2M_dma_w)
-  {
-    tmp8 = 7;
-  }
-  else
-  {
-    tmp8 = 0;
-  }
-
-  save_param(&cdc.ifstat, sizeof(cdc.ifstat));
-  save_param(&cdc.ifctrl, sizeof(cdc.ifctrl));
-  save_param(&cdc.dbc, sizeof(cdc.dbc));
-  save_param(&cdc.dac, sizeof(cdc.dac));
-  save_param(&cdc.pt, sizeof(cdc.pt));
-  save_param(&cdc.wa, sizeof(cdc.wa));
-  save_param(&cdc.ctrl, sizeof(cdc.ctrl));
-  save_param(&cdc.head, sizeof(cdc.head));
-  save_param(&cdc.stat, sizeof(cdc.stat));
-  save_param(&cdc.cycles, sizeof(cdc.cycles));
-  save_param(&cdc.ram, sizeof(cdc.ram));
-  save_param(&tmp8, 1);
-
-  return bufferptr;
-}
-
-int cdc_context_load(uint8 *state)
-{
-  uint8 tmp8;
-  int bufferptr = 0;
-
-  load_param(&cdc.ifstat, sizeof(cdc.ifstat));
-  load_param(&cdc.ifctrl, sizeof(cdc.ifctrl));
-  load_param(&cdc.dbc, sizeof(cdc.dbc));
-  load_param(&cdc.dac, sizeof(cdc.dac));
-  load_param(&cdc.pt, sizeof(cdc.pt));
-  load_param(&cdc.wa, sizeof(cdc.wa));
-  load_param(&cdc.ctrl, sizeof(cdc.ctrl));
-  load_param(&cdc.head, sizeof(cdc.head));
-  load_param(&cdc.stat, sizeof(cdc.stat));
-  load_param(&cdc.cycles, sizeof(cdc.cycles));
-  load_param(&cdc.ram, sizeof(cdc.ram));
-
-  load_param(&tmp8, 1);
-
-  switch (tmp8)
-  {
-    case 1:
-      cdc.dma_w = pcm_ram_dma_w;
-      cdc.halted_dma_w = 0;
-      break;
-    case 2:
-      cdc.dma_w = prg_ram_dma_w;
-      cdc.halted_dma_w = 0;
-      break;
-    case 3:
-      cdc.dma_w = word_ram_0_dma_w;
-      cdc.halted_dma_w = 0;
-      break;
-    case 4:
-      cdc.dma_w = word_ram_1_dma_w;
-      cdc.halted_dma_w = 0;
-      break;
-    case 5:
-      cdc.dma_w = word_ram_2M_dma_w;
-      cdc.halted_dma_w = 0;
-      break;
-    case 6:
-      cdc.dma_w = 0;
-      cdc.halted_dma_w = prg_ram_dma_w;
-      break;
-    case 7:
-      cdc.dma_w = 0;
-      cdc.halted_dma_w = word_ram_2M_dma_w;
-      break;
-    default:
-      cdc.dma_w = 0;
-      cdc.halted_dma_w = 0;
-      break;
-  }
-
-  cdc.irq = ~cdc.ifstat & cdc.ifctrl & (BIT_DTEIEN | BIT_DECIEN);
-
-  return bufferptr;
-}
-
 void cdc_dma_init(void)
 {
   /* no effect if data transfer is not started */
@@ -249,7 +116,7 @@ void cdc_dma_init(void)
     return;
   
   /* disable DMA by default */
-  cdc.dma_w = cdc.halted_dma_w = 0;
+  cdc_dma_w = cdc_halted_dma_w = 0;
 
   /* check data transfer destination */
   switch (scd.regs[0x04>>1].byte.h & 0x07)
@@ -274,7 +141,7 @@ void cdc_dma_init(void)
       cdc.dbc.w -= 2;
 
       /* end of transfer ? */
-      if ((int16)cdc.dbc.w < 0)
+      if ((int16_t)cdc.dbc.w < 0)
       {
         /* reset data byte counter (DBCH bits 4-7 should also be set to 1) */
         cdc.dbc.w = 0xffff;
@@ -321,7 +188,7 @@ void cdc_dma_init(void)
 
     case 4: /* PCM RAM DMA */
     {
-      cdc.dma_w = pcm_ram_dma_w;
+      cdc_dma_w = pcm_ram_dma_w;
       break;
     }
 
@@ -331,12 +198,12 @@ void cdc_dma_init(void)
       if (scd.regs[0x00].byte.l & 0x02)
       {
         /* halt DMA to PRG-RAM */
-        cdc.halted_dma_w = prg_ram_dma_w;
+        cdc_halted_dma_w = prg_ram_dma_w;
       }
       else
       {
         /* enable DMA to PRG-RAM */
-        cdc.dma_w = prg_ram_dma_w;
+        cdc_dma_w = prg_ram_dma_w;
       }
       break;
     }
@@ -350,12 +217,12 @@ void cdc_dma_init(void)
         if (scd.regs[0x02 >> 1].byte.l & 0x01)
         {
           /* Word-RAM bank 0 is assigned to SUB-CPU */
-          cdc.dma_w = word_ram_0_dma_w;
+          cdc_dma_w = word_ram_0_dma_w;
         }
         else
         {
           /* Word-RAM bank 1 is assigned to SUB-CPU */
-          cdc.dma_w = word_ram_1_dma_w;
+          cdc_dma_w = word_ram_1_dma_w;
         }
       }
       else
@@ -364,12 +231,12 @@ void cdc_dma_init(void)
         if (scd.regs[0x02 >> 1].byte.l & 0x01)
         {
           /* halt DMA to 2M Word-RAM */
-          cdc.halted_dma_w = word_ram_2M_dma_w;
+          cdc_halted_dma_w = word_ram_2M_dma_w;
         }
         else
         {
           /* enable DMA to 2M Word-RAM */
-          cdc.dma_w = word_ram_2M_dma_w;
+          cdc_dma_w = word_ram_2M_dma_w;
         }
       }
       break;
@@ -397,7 +264,7 @@ void cdc_dma_update(unsigned int cycles)
   if (cdc.dbc.w < dma_bytes)
   {
     /* transfer remaining bytes using DMA */
-    cdc.dma_w(cdc.dbc.w + 1);
+    cdc_dma_w(cdc.dbc.w + 1);
 
     /* update DMA cycle counter */
     cdc.cycles[0] += (cdc.dbc.w + 1) * DMA_CYCLES_PER_BYTE;
@@ -458,12 +325,12 @@ void cdc_dma_update(unsigned int cycles)
     }
 
     /* disable DMA */
-    cdc.dma_w = cdc.halted_dma_w = 0;
+    cdc_dma_w = cdc_halted_dma_w = 0;
   }
   else if (dma_bytes > 0)
   {
     /* transfer limited amount of bytes using DMA */
-    cdc.dma_w(dma_bytes);
+    cdc_dma_w(dma_bytes);
 
     /* decrement data byte counter */
     cdc.dbc.w -= dma_bytes;
@@ -473,13 +340,13 @@ void cdc_dma_update(unsigned int cycles)
   }
 }
 
-void cdc_decoder_update(uint32 header)
+void cdc_decoder_update(uint32_t header)
 {
   /* data decoding enabled ? */
   if (cdc.ctrl[0] & BIT_DECEN)
   {
     /* update HEADx registers with current block header */
-    *(uint32 *)(cdc.head[0]) = header;
+    *(uint32_t *)(cdc.head[0]) = header;
 
     /* set !VALST */
     cdc.stat[3] = 0x00;
@@ -523,7 +390,7 @@ void cdc_decoder_update(uint32 header)
       offset = cdc.pt.w & 0x3fff;
 
       /* write current block header to RAM buffer (4 bytes) */
-      *(uint32 *)(cdc.ram + offset) = header;
+      *(uint32_t *)(cdc.ram + offset) = header;
       offset += 4;
 
       /* check decoded block mode */
@@ -542,8 +409,8 @@ void cdc_decoder_update(uint32 header)
           cdd_read_data(cdc.ram + offset + 8, cdc.head[1]);
 
           /* write current block sub-header to RAM buffer (4 bytes x 2) */
-          *(uint32 *)(cdc.ram + offset) = *(uint32 *)(cdc.head[1]);
-          *(uint32 *)(cdc.ram + offset + 4) = *(uint32 *)(cdc.head[1]);
+          *(uint32_t *)(cdc.ram + offset) = *(uint32_t *)(cdc.head[1]);
+          *(uint32_t *)(cdc.ram + offset + 4) = *(uint32_t *)(cdc.head[1]);
           offset += 2336;
         }
         else
@@ -581,7 +448,7 @@ void cdc_reg_w(unsigned char data)
     case 0x01:  /* IFCTRL */
     {
       /* previous CDC IRQ state */
-      uint8 prev_irq = cdc.irq;
+      uint8_t prev_irq = cdc.irq;
 
       /* check end of CDC decoder active period */
       if (s68k.cycles > cdc.cycles[1])
@@ -613,7 +480,7 @@ void cdc_reg_w(unsigned char data)
         cdc.ifstat |= (BIT_DTBSY | BIT_DTEN);
 
         /* disable DMA */
-        cdc.dma_w = cdc.halted_dma_w = 0;
+        cdc_dma_w = cdc_halted_dma_w = 0;
       }
 
       cdc.ifctrl = data;
@@ -749,7 +616,7 @@ void cdc_reg_w(unsigned char data)
 
 unsigned char cdc_reg_r(void)
 {
-  uint8 data;
+  uint8_t data;
 
   switch (scd.regs[0x04>>1].byte.l)
   {
@@ -882,10 +749,10 @@ unsigned char cdc_reg_r(void)
   return data;
 }
 
-unsigned short cdc_host_r(uint8 cpu_access)
+unsigned short cdc_host_r(uint8_t cpu_access)
 {
   /* read CDC buffered data (gate-array register $08) */
-  uint16 data = scd.regs[0x08>>1].w;
+  uint16_t data = scd.regs[0x08>>1].w;
 
   /* check if host data transfer is started for selected CPU */
   if ((scd.regs[0x04>>1].byte.h & 0x47) == cpu_access)
@@ -912,7 +779,7 @@ unsigned short cdc_host_r(uint8 cpu_access)
       cdc.dbc.w -= 2;
 
       /* end of transfer ? */
-      if ((int16)cdc.dbc.w < 0)
+      if ((int16_t)cdc.dbc.w < 0)
       {
         /* reset data byte counter (DBCH bits 4-7 should also be set to 1) */
         cdc.dbc.w = 0xffff;

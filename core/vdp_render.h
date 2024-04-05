@@ -40,8 +40,9 @@
  *
  ****************************************************************************************/
 
-#ifndef _RENDER_H_
-#define _RENDER_H_
+#pragma once 
+
+#include <stdint.h>
 
 /* 3:3:2 RGB */
 #if defined(USE_8BPP_RENDERING)
@@ -87,9 +88,9 @@
 { \
   PIXEL_OUT_T pixel_out = table[*in++]; \
   PIXEL_OUT_T pixel_old  = *out; \
-  uint8 r = GET_R(pixel_out); \
-  uint8 g = GET_G(pixel_out); \
-  uint8 b = GET_B(pixel_out); \
+  uint8_t r = GET_R(pixel_out); \
+  uint8_t g = GET_G(pixel_out); \
+  uint8_t b = GET_B(pixel_out); \
   int r_decay = GET_R(pixel_old) - r; \
   int g_decay = GET_G(pixel_old) - g; \
   int b_decay = GET_B(pixel_old) - b; \
@@ -99,8 +100,90 @@
   *out++ = PIXEL(r,g,b); \
 }
 
-/* Global variables */
-extern uint16 spr_col;
+/* Window & Plane A clipping */
+struct clip_t
+{
+  uint8_t left;
+  uint8_t right;
+  uint8_t enable;
+};
+
+/* Sprite parsing lists */
+typedef struct
+{
+  uint16_t ypos;
+  uint16_t xpos;
+  uint16_t attr;
+  uint16_t size;
+} object_info_t;
+
+#ifndef HAVE_NO_SPRITE_LIMIT
+#define MAX_SPRITES_PER_LINE 20
+#define TMS_MAX_SPRITES_PER_LINE 4
+#define MODE4_MAX_SPRITES_PER_LINE 8
+#define MODE5_MAX_SPRITES_PER_LINE (bitmap.viewport.w >> 4)
+#define MODE5_MAX_SPRITE_PIXELS max_sprite_pixels
+#endif
+
+/* Output pixels type*/
+#if defined(USE_8BPP_RENDERING)
+#define PIXEL_OUT_T uint8_t
+#elif defined(USE_32BPP_RENDERING)
+#define PIXEL_OUT_T uint32_t
+#else
+#define PIXEL_OUT_T uint16_t
+#endif
+
+
+/* Pixel priority look-up tables information */
+#define LUT_MAX     (6)
+#define LUT_SIZE    (0x10000)
+
+#ifdef ALIGN_LONG
+#undef READ_LONG
+#undef WRITE_LONG
+
+INLINE uint32_t READ_LONG(void *address)
+{
+  if ((uint32_t)address & 3)
+  {
+#ifdef LSB_FIRST  /* little endian version */
+    return ( *((uint8_t *)address) +
+        (*((uint8_t *)address+1) << 8)  +
+        (*((uint8_t *)address+2) << 16) +
+        (*((uint8_t *)address+3) << 24) );
+#else       /* big endian version */
+    return ( *((uint8_t *)address+3) +
+        (*((uint8_t *)address+2) << 8)  +
+        (*((uint8_t *)address+1) << 16) +
+        (*((uint8_t *)address)   << 24) );
+#endif  /* LSB_FIRST */
+  }
+  else return *(uint32_t *)address;
+}
+
+INLINE void WRITE_LONG(void *address, uint32_t data)
+{
+  if ((uint32_t)address & 3)
+  {
+#ifdef LSB_FIRST
+      *((uint8_t *)address) =  data;
+      *((uint8_t *)address+1) = (data >> 8);
+      *((uint8_t *)address+2) = (data >> 16);
+      *((uint8_t *)address+3) = (data >> 24);
+#else
+      *((uint8_t *)address+3) =  data;
+      *((uint8_t *)address+2) = (data >> 8);
+      *((uint8_t *)address+1) = (data >> 16);
+      *((uint8_t *)address)   = (data >> 24);
+#endif /* LSB_FIRST */
+    return;
+  }
+  else *(uint32_t *)address = data;
+}
+
+#endif  /* ALIGN_LONG */
+
 
 /* Function prototypes */
 extern void render_init(void);
@@ -141,5 +224,3 @@ extern void (*render_bg)(int line);
 extern void (*render_obj)(int line);
 extern void (*parse_satb)(int line);
 extern void (*update_bg_pattern_cache)(int index);
-
-#endif /* _RENDER_H_ */

@@ -36,48 +36,18 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-/* max supported size 64KB (25x512/95x512) */
-#define SIZE_MASK 0xffff
-#define PAGE_MASK 0x7f
-
-/* hard-coded board implementation (!WP pin not used) */
-#define BIT_DATA (0)
-#define BIT_CLK  (1)
-#define BIT_HOLD (2)
-#define BIT_CS   (3)
-
-typedef enum
-{
-  STANDBY,
-  GET_OPCODE,
-  GET_ADDRESS,
-  WRITE_BYTE,
-  READ_BYTE
-} T_STATE_SPI;
-
-typedef struct
-{
-  uint8 cs;           /* !CS line state */
-  uint8 clk;          /* SCLK line state */
-  uint8 out;          /* SO line state */
-  uint8 status;       /* status register */
-  uint8 opcode;       /* 8-bit opcode */
-  uint8 buffer;       /* 8-bit data buffer */
-  uint16 addr;        /* 16-bit address */
-  uint32 cycles;      /* current operation cycle */
-  T_STATE_SPI state;  /* current operation state */
-} T_EEPROM_SPI;
-
-static T_EEPROM_SPI spi_eeprom;
+#include <stdint.h>
+#include <string.h>
+#include "sram.h"
+#include "eeprom_spi.h"
+#include "state.h"
 
 void eeprom_spi_init(void)
 {
   /* reset eeprom state */
   memset(&spi_eeprom, 0, sizeof(T_EEPROM_SPI));
   spi_eeprom.out = 1;
-  spi_eeprom.state = GET_OPCODE;
+  spi_eeprom.state = _SPI_GET_OPCODE;
 
   /* enable backup RAM */
   sram.custom = 2;
@@ -96,14 +66,14 @@ void eeprom_spi_write(unsigned char data)
       spi_eeprom.cycles = 0;
       spi_eeprom.out = 1;
       spi_eeprom.opcode = 0;
-      spi_eeprom.state = GET_OPCODE;
+      spi_eeprom.state = _SPI_GET_OPCODE;
     }
     else
     {
       /* !CS low -> process current operation */
       switch (spi_eeprom.state)
       {
-        case GET_OPCODE:
+        case _SPI_GET_OPCODE:
         {
           /* latch data on CLK positive edge */
           if ((data & (1 << BIT_CLK)) && !spi_eeprom.clk)
@@ -125,7 +95,7 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* WRITE STATUS */
                   spi_eeprom.buffer = 0;
-                  spi_eeprom.state = WRITE_BYTE;
+                  spi_eeprom.state = _SPI_WRITE_BYTE;
                   break;
                 }
 
@@ -133,7 +103,7 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* WRITE BYTE */
                   spi_eeprom.addr = 0;
-                  spi_eeprom.state = GET_ADDRESS;
+                  spi_eeprom.state = _SPI_GET_ADDRESS;
                   break;
                 }
 
@@ -141,7 +111,7 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* READ BYTE */
                   spi_eeprom.addr = 0;
-                  spi_eeprom.state = GET_ADDRESS;
+                  spi_eeprom.state = _SPI_GET_ADDRESS;
                   break;
                 }
 
@@ -149,7 +119,7 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* WRITE DISABLE */
                   spi_eeprom.status &= ~0x02;
-                  spi_eeprom.state = STANDBY;
+                  spi_eeprom.state = _SPI_STANDBY;
                   break;
                 }
 
@@ -157,7 +127,7 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* READ STATUS */
                   spi_eeprom.buffer = spi_eeprom.status;
-                  spi_eeprom.state = READ_BYTE;
+                  spi_eeprom.state = _SPI_READ_BYTE;
                   break;
                 }
 
@@ -165,14 +135,14 @@ void eeprom_spi_write(unsigned char data)
                 {
                   /* WRITE ENABLE */
                   spi_eeprom.status |= 0x02;
-                  spi_eeprom.state = STANDBY;
+                  spi_eeprom.state = _SPI_STANDBY;
                   break;
                 }
 
                 default:
                 {
                   /* specific instructions (not supported) */
-                  spi_eeprom.state = STANDBY;
+                  spi_eeprom.state = _SPI_STANDBY;
                   break;
                 }
               }
@@ -186,7 +156,7 @@ void eeprom_spi_write(unsigned char data)
           break;
         }
 
-        case GET_ADDRESS:
+        case _SPI_GET_ADDRESS:
         {
           /* latch data on CLK positive edge */
           if ((data & (1 << BIT_CLK)) && !spi_eeprom.clk)
@@ -209,13 +179,13 @@ void eeprom_spi_write(unsigned char data)
               {
                 /* READ operation */
                 spi_eeprom.buffer = sram.sram[spi_eeprom.addr];
-                spi_eeprom.state = READ_BYTE;
+                spi_eeprom.state = _SPI_READ_BYTE;
               }
               else
               {
                 /* WRITE operation */
                 spi_eeprom.buffer = 0;
-                spi_eeprom.state = WRITE_BYTE;
+                spi_eeprom.state = _SPI_WRITE_BYTE;
               }
             }
             else
@@ -227,7 +197,7 @@ void eeprom_spi_write(unsigned char data)
           break;
         }
 
-        case WRITE_BYTE:
+        case _SPI_WRITE_BYTE:
         {
           /* latch data on CLK positive edge */
           if ((data & (1 << BIT_CLK)) && !spi_eeprom.clk)
@@ -249,7 +219,7 @@ void eeprom_spi_write(unsigned char data)
                 spi_eeprom.status = (spi_eeprom.status & 0x02) | (spi_eeprom.buffer & 0x0c);
 
                 /* wait for operation end */
-                spi_eeprom.state = STANDBY;
+                spi_eeprom.state = _SPI_STANDBY;
               }
               else
               {
@@ -310,7 +280,7 @@ void eeprom_spi_write(unsigned char data)
           break;
         }
 
-        case READ_BYTE:
+        case _SPI_READ_BYTE:
         {
           /* output data on CLK positive edge */
           if ((data & (1 << BIT_CLK)) && !spi_eeprom.clk)

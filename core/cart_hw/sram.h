@@ -36,18 +36,19 @@
  *
  ****************************************************************************************/
 
-#ifndef _SRAM_H_
-#define _SRAM_H_
+#pragma once
+
+#include <stdint.h>
 
 typedef struct
 {
-  uint8 detected;
-  uint8 on;
-  uint8 custom;
-  uint32 start;
-  uint32 end;
-  uint32 crc;
-  uint8 sram[0x10000];
+  uint8_t detected;
+  uint8_t on;
+  uint8_t custom;
+  uint32_t start;
+  uint32_t end;
+  uint32_t crc;
+  uint8_t sram[0x10000];
 } T_SRAM;
 
 /* Function prototypes */
@@ -56,8 +57,3 @@ extern unsigned int sram_read_byte(unsigned int address);
 extern unsigned int sram_read_word(unsigned int address);
 extern void sram_write_byte(unsigned int address, unsigned int data);
 extern void sram_write_word(unsigned int address, unsigned int data);
-
-/* global variables */
-extern T_SRAM sram;
-
-#endif

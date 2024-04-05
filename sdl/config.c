@@ -1,8 +1,9 @@
 
-#include "shared.h"
+#include "config.h"
+#include <state.h>
+#include <input_hw/input.h>
 
 t_config config;
-
 
 void set_config_defaults(void)
 {
@@ -22,7 +23,7 @@ void set_config_defaults(void)
   config.mg             = 100;
   config.hg             = 100;
   config.lp_range       = 0x9999; /* 0.6 in 0.16 fixed point */
-  config.ym2612         = YM2612_DISCRETE;
+  config.ym2612         = 0;
   config.ym2413         = 2; /* = AUTO (0 = always OFF, 1 = always ON) */
   config.ym3438         = 0;
   config.opll           = 0;

@@ -39,12 +39,11 @@
  *
  ****************************************************************************************/
 
-#ifndef _GENESIS_H_
-#define _GENESIS_H_
+#pragma once
 
-#include "md_cart.h"
-#include "sms_cart.h"
-#include "scd.h"
+#include "cart_hw/md_cart.h"
+#include "cart_hw/sms_cart.h"
+#include "cd_hw/scd.h"
 
 /* External Hardware */
 typedef union
@@ -53,18 +52,6 @@ typedef union
   cd_hw_t cd_hw;
 } external_t;
 
-/* Global variables */
-#ifdef USE_DYNAMIC_ALLOC
-extern external_t *ext;
-#else
-extern external_t ext;
-#endif
-extern uint8 boot_rom[0x800];
-extern uint8 work_ram[0x10000];
-extern uint8 zram[0x2000];
-extern uint32 zbank;
-extern uint8 zstate;
-extern uint8 pico_current;
 
 /* Function prototypes */
 extern void gen_init(void);
@@ -77,5 +64,4 @@ extern void gen_zreset_w(unsigned int state, unsigned int cycles);
 extern void gen_zbank_w(unsigned int state);
 extern int z80_irq_callback(int param);
 
-#endif /* _GEN_H_ */
 

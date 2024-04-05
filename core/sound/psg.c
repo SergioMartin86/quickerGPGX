@@ -40,8 +40,11 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <config.h>
+#include "../system.h"
 #include "blip_buf.h"
+#include "psg.h"
+#include "state.h"
 
 /* internal clock = input clock : 16 = (master clock : 15) : 16 */
 #define PSG_MCYCLES_RATIO (15*16)
@@ -49,13 +52,13 @@
 /* maximal channel output (roughly adjusted to match VA4 MD1 PSG/FM balance with 1.5x amplification of PSG output) */
 #define PSG_MAX_VOLUME 2800
 
-static const uint8 noiseShiftWidth[2] = {14,15};
+static const uint8_t noiseShiftWidth[2] = {14,15};
 
-static const uint8 noiseBitMask[2] = {0x6,0x9};
+static const uint8_t noiseBitMask[2] = {0x6,0x9};
 
-static const uint8 noiseFeedback[10] = {0,1,1,0,1,0,0,1,1,0};
+static const uint8_t noiseFeedback[10] = {0,1,1,0,1,0,0,1,1,0};
 
-static const uint16 chanVolume[16] = {
+static const uint16_t chanVolume[16] = {
   PSG_MAX_VOLUME,               /*  MAX  */
   PSG_MAX_VOLUME * 0.794328234, /* -2dB  */
   PSG_MAX_VOLUME * 0.630957344, /* -4dB  */
@@ -73,23 +76,6 @@ static const uint16 chanVolume[16] = {
   PSG_MAX_VOLUME * 0.039810717, /* -28dB */
   0                             /*  OFF  */
 };
-
-static struct
-{
-  int clocks;
-  int latch;
-  int zeroFreqInc;
-  int noiseShiftValue;
-  int noiseShiftWidth;
-  int noiseBitMask;
-  int regs[8];
-  int freqInc[4];
-  int freqCounter[4];
-  int polarity[4];
-  int chanDelta[4][2];
-  int chanOut[4][2];
-  int chanAmp[4][2];
-} psg;
 
 static void psg_update(unsigned int clocks);
 
@@ -138,88 +124,6 @@ void psg_reset(void)
 
   /* reset internal M-cycles clock counter */
   psg.clocks = 0;
-}
-
-int psg_context_save(uint8 *state)
-{
-  int bufferptr = 0;
-
-  save_param(&psg.clocks,sizeof(psg.clocks));
-  save_param(&psg.latch,sizeof(psg.latch));
-  save_param(&psg.noiseShiftValue,sizeof(psg.noiseShiftValue));
-  save_param(psg.regs,sizeof(psg.regs));
-  save_param(psg.freqInc,sizeof(psg.freqInc));
-  save_param(psg.freqCounter,sizeof(psg.freqCounter));
-  save_param(psg.polarity,sizeof(psg.polarity));
-  save_param(psg.chanOut,sizeof(psg.chanOut));
-
-  return bufferptr;
-}
-
-int psg_context_load(uint8 *state)
-{
-  int delta[2];
-  int i, bufferptr = 0;
-
-  /* initialize delta with current noise channel output */
-  if (psg.noiseShiftValue & 1)
-  {
-    delta[0] = -psg.chanOut[3][0];
-    delta[1] = -psg.chanOut[3][1];
-  }
-  else
-  {
-    delta[0] = 0;
-    delta[1] = 0;
-  }
-
-  /* add current tone channels output */
-  for (i=0; i<3; i++)
-  {
-    if (psg.polarity[i] > 0)
-    {
-      delta[0] -= psg.chanOut[i][0];
-      delta[1] -= psg.chanOut[i][1];
-    }
-  }
-
-  load_param(&psg.clocks,sizeof(psg.clocks));
-  load_param(&psg.latch,sizeof(psg.latch));
-  load_param(&psg.noiseShiftValue,sizeof(psg.noiseShiftValue));
-  load_param(psg.regs,sizeof(psg.regs));
-  load_param(psg.freqInc,sizeof(psg.freqInc));
-  load_param(psg.freqCounter,sizeof(psg.freqCounter));
-  load_param(psg.polarity,sizeof(psg.polarity));
-  load_param(psg.chanOut,sizeof(psg.chanOut));
-
-  /* add noise channel output variation */
-  if (psg.noiseShiftValue & 1)
-  {
-    delta[0] += psg.chanOut[3][0];
-    delta[1] += psg.chanOut[3][1];
-  }
-
-  /* add tone channels output variation */
-  for (i=0; i<3; i++)
-  {
-    if (psg.polarity[i] > 0)
-    {
-      delta[0] += psg.chanOut[i][0];
-      delta[1] += psg.chanOut[i][1];
-    }
-  }
-
-  /* update mixed channels output */
-  if (config.hq_psg)
-  {
-    blip_add_delta(snd.blips[0], psg.clocks, delta[0], delta[1]);
-  }
-  else
-  {
-    blip_add_delta_fast(snd.blips[0], psg.clocks, delta[0], delta[1]);
-  }
-
-  return bufferptr;
 }
 
 void psg_write(unsigned int clocks, unsigned int data)
