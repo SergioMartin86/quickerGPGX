@@ -12,6 +12,7 @@ protectedTestSet = [
   'theLionKing.anyPercent',
   'virtuaRacing.playaround',
   'ultimateMK3.playaround',
+  'throne.playaround',
 ]
 
 # Tests for open source free roms (for public cloud testing)
