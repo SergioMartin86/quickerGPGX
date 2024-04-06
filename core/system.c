@@ -39,23 +39,21 @@
  *
  ****************************************************************************************/
 
-#include <string.h>
-#include <config.h>
-#include <osd.h>
-#include "cart_hw/svp/svp.h"
-#include "sound/eq.h"
-#include "m68k/m68k.h"
-#include "z80/z80.h"
-#include "sound/sound.h"
-#include "input_hw/input.h"
-#include "system.h"
-#include "genesis.h"
-#include "vdp_ctrl.h"
-#include "vdp_render.h"
-#include "io_ctrl.h"
-#include "state.h"
+#include "shared.h"
+#include "eq.h"
 
 /* Global variables */
+t_bitmap bitmap;
+t_snd snd;
+uint32 mcycles_vdp;
+uint8 system_hw;
+uint8 system_bios;
+uint32 system_clock;
+int16 SVP_cycles = 800; 
+
+uint8 pause_b;
+static EQSTATE eq[2];
+static int16 llp,rrp;
 
 /******************************************************************************************/
 /* Audio subsystem                                                                        */
@@ -192,7 +190,7 @@ void audio_shutdown(void)
   }
 }
 
-int audio_update(int16_t *buffer)
+int audio_update(int16 *buffer)
 {
   /* run sound chips until end of frame */
   int size = sound_update(mcycles_vdp);
@@ -229,14 +227,14 @@ int audio_update(int16_t *buffer)
   if (config.filter)
   {
     int samples = size;
-    int16_t *out = buffer;
-    int32_t l, r;
+    int16 *out = buffer;
+    int32 l, r;
 
     if (config.filter & 1)
     {
       /* single-pole low-pass filter (6 dB/octave) */
-      uint32_t factora  = config.lp_range;
-      uint32_t factorb  = 0x10000 - factora;
+      uint32 factora  = config.lp_range;
+      uint32 factorb  = 0x10000 - factora;
 
       /* restore previous sample */
       l = llp;
@@ -287,7 +285,7 @@ int audio_update(int16_t *buffer)
   /* Mono output mixing */
   if (config.mono)
   {
-    int16_t out;
+    int16 out;
     int samples = size;
     do
     {

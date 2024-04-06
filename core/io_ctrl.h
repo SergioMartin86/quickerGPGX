@@ -39,9 +39,8 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
+#ifndef _IO_CTRL_H_
+#define _IO_CTRL_H_
 
 #define IO_RESET_HI 0x10
 #define IO_CONT1_HI 0x20
@@ -51,11 +50,9 @@
 #define REGION_USA        0x80
 #define REGION_EUROPE     0xC0
 
-struct port_t
-{
-  void (*data_w)(unsigned char data, unsigned char mask);
-  unsigned char (*data_r)(void);
-}; 
+/* Global variables */
+extern uint8 io_reg[0x10];
+extern uint8 region_code;
 
 /* Function prototypes */
 extern void io_init(void);
@@ -67,4 +64,5 @@ extern unsigned int io_z80_read(unsigned int offset);
 extern void io_gg_write(unsigned int offset, unsigned int data);
 extern unsigned int io_gg_read(unsigned int offset);
 
+#endif /* _IO_CTRL_H_ */
 

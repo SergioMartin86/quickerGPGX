@@ -35,64 +35,44 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-#pragma once
+#ifndef _HW_CDC_
+#define _HW_CDC_
 
 #define cdc scd.cdc_hw
 
 #define CDC_MAIN_CPU_ACCESS 0x42
 #define CDC_SUB_CPU_ACCESS  0x43
 
-/* IFSTAT register bitmasks */
-#define BIT_DTEI  0x40
-#define BIT_DECI  0x20
-#define BIT_DTBSY 0x08
-#define BIT_DTEN  0x02
-
-/* IFCTRL register bitmasks */
-#define BIT_DTEIEN  0x40
-#define BIT_DECIEN  0x20
-#define BIT_DOUTEN  0x02
-
-/* CTRL0 register bitmasks */
-#define BIT_DECEN   0x80
-#define BIT_AUTORQ  0x10
-#define BIT_WRRQ    0x04
-
-/* CTRL1 register bitmasks */
-#define BIT_MODRQ   0x08
-#define BIT_FORMRQ  0x04
-#define BIT_SHDREN  0x01
-
-/* STAT3 register bitmask */
-#define BIT_VALST   0x80
-
 /* CDC hardware */
 typedef struct
 {
-  uint8_t ifstat;
-  uint8_t ifctrl;
+  uint8 ifstat;
+  uint8 ifctrl;
   reg16_t dbc;
   reg16_t dac;
   reg16_t pt;
   reg16_t wa;
-  uint8_t ctrl[2];
-  uint8_t head[2][4];
-  uint8_t stat[4];
+  uint8 ctrl[2];
+  uint8 head[2][4];
+  uint8 stat[4];
   int cycles[2];
-  uint8_t ram[0x4000 + 2352]; /* 16K external RAM (with one block overhead to handle buffer overrun) */
-  uint8_t ar_mask;
-  uint8_t irq; /* invert of CDC /INT output */
+  void (*dma_w)(unsigned int length);  /* active DMA callback */
+  void (*halted_dma_w)(unsigned int length);  /* halted DMA callback */
+  uint8 ram[0x4000 + 2352]; /* 16K external RAM (with one block overhead to handle buffer overrun) */
+  uint8 ar_mask;
+  uint8 irq; /* invert of CDC /INT output */
 } cdc_t; 
 
 /* Function prototypes */
 extern void cdc_init(void);
 extern void cdc_reset(void);
-extern int cdc_context_save(uint8_t *state);
-extern int cdc_context_load(uint8_t *state);
+extern int cdc_context_save(uint8 *state);
+extern int cdc_context_load(uint8 *state);
 extern void cdc_dma_init(void);
 extern void cdc_dma_update(unsigned int cycles);
-extern void cdc_decoder_update(uint32_t header);
+extern void cdc_decoder_update(uint32 header);
 extern void cdc_reg_w(unsigned char data);
 extern unsigned char cdc_reg_r(void);
-extern unsigned short cdc_host_r(uint8_t cpu_access);
+extern unsigned short cdc_host_r(uint8 cpu_access);
 
+#endif

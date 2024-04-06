@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/drunkasilike.bin",
+  "Expected ROM SHA1": "996F6C66CC9F1F2D164A245A02F0DEDC0D09E856",
+  "Initial State File": "drunkasilike.savestart.state",
+  "Disable State Blocks": [ ],
+  "System Type": "Sega Genesis",
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "Gamepad3B",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

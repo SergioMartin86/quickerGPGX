@@ -1,7 +1,8 @@
 /** Sample buffer that resamples from input clock rate to output sample rate \file */
 
 /* blip_buf $vers */
-#pragma once
+#ifndef BLIP_BUF_H 
+#define BLIP_BUF_H
 
 #ifdef __cplusplus
 	extern "C" {
@@ -81,3 +82,4 @@ typedef blip_t blip_buffer_t;
 	}
 #endif
 
+#endif

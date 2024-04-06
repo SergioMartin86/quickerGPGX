@@ -10,8 +10,10 @@
    Modified for Genesis Plus GX (Eke-Eke): added BIG ENDIAN support, fixed addr/code inversion
 */
 
-#pragma once
+#ifndef _SVP_H_
+#define _SVP_H_
 
+#include "shared.h"
 #include "ssp16.h"
 
 typedef struct {
@@ -24,4 +26,5 @@ extern svp_t *svp;
 
 extern void svp_init(void);
 extern void svp_reset(void);
-extern void svp_set_mappings(void);
+
+#endif

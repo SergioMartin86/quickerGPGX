@@ -36,15 +36,8 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
-
-struct paddle_t
-{
-  uint8_t State;
-  uint8_t Counter;
-};
+#ifndef _PADDLE_H_
+#define _PADDLE_H_
 
 /* Function prototypes */
 extern void paddle_reset(int port);
@@ -53,3 +46,4 @@ extern unsigned char paddle_2_read(void);
 extern void paddle_1_write(unsigned char data, unsigned char mask);
 extern void paddle_2_write(unsigned char data, unsigned char mask);
 
+#endif

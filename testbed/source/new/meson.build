@@ -105,12 +105,22 @@ newGPGXSrc =  [
 
 newGPGXIncludeDirs = [
   '.',
-  '../../../core/',
-  '../../../sdl',
-  '../../../sdl/sdl2',
+  '../../../core',
+  '../../../core/cart_hw',
+  '../../../core/cart_hw/svp',
   '../../../core/cd_hw/libchdr/deps/libFLAC/include',
   '../../../core/cd_hw/libchdr/deps/lzma',
   '../../../core/cd_hw/libchdr/deps/zlib',
+  '../../../core/cd_hw',
+  '../../../core/debug',
+  '../../../core/input_hw',
+  '../../../core/m68k',
+  '../../../core/ntsc',
+  '../../../core/sound',
+  '../../../core/tremor',
+  '../../../core/z80',
+  '../../../sdl',
+  '../../../sdl/sdl2',
 ]
 
 newGPGXCompileArgs = [

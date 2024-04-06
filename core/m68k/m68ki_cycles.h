@@ -1,5 +1,3 @@
-#pragma once
-
 static const unsigned char m68ki_cycles[0x10000] =
 {
     8*7,   8*7,   8*7,   8*7,   8*7,   8*7,   8*7,   8*7,   0*7,   0*7,   0*7,   0*7,   0*7,   0*7,   0*7,   0*7, 

@@ -1,17 +1,9 @@
-#include <SDL.h>
-#include <SDL_thread.h>
-#include <config.h>
-#include <error.h>
-#include <osd.h>
-#include <loadrom.h>
-#include <system.h>
-#include <genesis.h>
-#include <vdp_ctrl.h>
-#include <input_hw/input.h>
-#include <cart_hw/sram.h>
-#include <ntsc/sms_ntsc.h>
-#include <ntsc/md_ntsc.h>
-#include <state.h>
+#include "SDL.h"
+#include "SDL_thread.h"
+
+#include "shared.h"
+#include "sms_ntsc.h"
+#include "md_ntsc.h"
 
 #define SOUND_FREQUENCY 48000
 #define SOUND_SAMPLES_SIZE  2048
@@ -45,7 +37,7 @@ struct {
 } sdl_sound;
 
 
-static uint8_t brm_format[0x40] =
+static uint8 brm_format[0x40] =
 {
   0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x5f,0x00,0x00,0x00,0x00,0x40,
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -311,7 +303,7 @@ static void sdl_sync_close()
     SDL_DestroySemaphore(sdl_sync.sem_sync);
 }
 
-static const uint16_t vc_table[4][2] =
+static const uint16 vc_table[4][2] =
 {
   /* NTSC, PAL */
   {0xDA , 0xF2},  /* Mode 4 (192 lines) */
@@ -377,32 +369,28 @@ static int sdl_control_update(SDL_Keycode keystate)
 
       case SDLK_F7:
       {
-        // const char fileName[] = "game.gp0";
-        // FILE *f = fopen(fileName,"rb");
-        // if (f)
-        // {
-        //   uint8_t buf[STATE_SIZE];
-        //   int status = fread(&buf, STATE_SIZE, 1, f);
-        //   if (status < 0) { fprintf(stderr, "Error loading file `%s'.", fileName); exit(-1); }
-        //   state_load(buf);
-        //   fclose(f);
-        // }
-        // break;
+        FILE *f = fopen("game.gp0","rb");
+        if (f)
+        {
+          uint8 buf[STATE_SIZE];
+          fread(&buf, STATE_SIZE, 1, f);
+          state_load(buf);
+          fclose(f);
+        }
+        break;
       }
 
       case SDLK_F8:
       {
-        // const char fileName[] = "game.gp0";
-        // FILE *f = fopen(fileName,"wb");
-        // if (f)
-        // {
-        //   uint8_t buf[STATE_SIZE];
-        //   int len = state_save(buf);
-        //   int status = fwrite(&buf, len, 1, f);
-        //   if (status < 0) { fprintf(stderr, "Error saving file `%s'.", fileName); exit(-1); }
-        //   fclose(f);
-        // }
-        // break;
+        FILE *f = fopen("game.gp0","wb");
+        if (f)
+        {
+          uint8 buf[STATE_SIZE];
+          int len = state_save(buf);
+          fwrite(&buf, len, 1, f);
+          fclose(f);
+        }
+        break;
       }
 
       case SDLK_F9:
@@ -505,7 +493,7 @@ static int sdl_control_update(SDL_Keycode keystate)
 
 int sdl_input_update(void)
 {
-  const uint8_t *keystate = SDL_GetKeyboardState(NULL);
+  const uint8 *keystate = SDL_GetKeyboardState(NULL);
 
   /* reset input */
   input.pad[joynum] = 0;
@@ -741,8 +729,7 @@ int main (int argc, char **argv)
     int i;
 
     /* read BOOT ROM */
-    int status = fread(boot_rom, 1, 0x800, fp);
-    if (status < 0) { fprintf(stderr, "Error reading from file `%s'.", MD_BIOS); exit(-1); }
+    fread(boot_rom, 1, 0x800, fp);
     fclose(fp);
 
     /* check BOOT ROM */
@@ -755,7 +742,7 @@ int main (int argc, char **argv)
     /* Byteswap ROM */
     for (i=0; i<0x800; i+=2)
     {
-      uint8_t temp = boot_rom[i];
+      uint8 temp = boot_rom[i];
       boot_rom[i] = boot_rom[i+1];
       boot_rom[i+1] = temp;
     }
@@ -806,12 +793,10 @@ int main (int argc, char **argv)
   if (system_hw == SYSTEM_MCD)
   {
     /* load internal backup RAM */
-    const char fileName[] = "./scd.brm";
-    fp = fopen(fileName, "rb");
+    fp = fopen("./scd.brm", "rb");
     if (fp!=NULL)
     {
-      int status = fread(scd.bram, 0x2000, 1, fp);
-      if (status < 0) { fprintf(stderr, "Error reading from file `%s'.", fileName); exit(-1); }
+      fread(scd.bram, 0x2000, 1, fp);
       fclose(fp);
     }
 
@@ -832,14 +817,10 @@ int main (int argc, char **argv)
     /* load cartridge backup RAM */
     if (scd.cartridge.id)
     {
-      const char fileName[] = "./cart.brm";
-      fp = fopen(fileName, "rb");
-      if (status < 0) { fprintf(stderr, "Error opening file `%s'.", fileName); exit(-1); }
-
+      fp = fopen("./cart.brm", "rb");
       if (fp!=NULL)
       {
-        int status = fread(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
-        if (status < 0) { fprintf(stderr, "Error reading from file `%s'.", fileName); exit(-1); }
+        fread(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
         fclose(fp);
       }
 
@@ -862,12 +843,10 @@ int main (int argc, char **argv)
   if (sram.on)
   {
     /* load SRAM */
-    const char fileName[] = "./game.srm";
-    fp = fopen(fileName, "rb");
+    fp = fopen("./game.srm", "rb");
     if (fp!=NULL)
     {
-      int status = fread(sram.sram,0x10000,1, fp);
-      if (status < 0) { fprintf(stderr, "Error reading from file `%s'.", fileName); exit(-1); }
+      fread(sram.sram,0x10000,1, fp);
       fclose(fp);
     }
   }

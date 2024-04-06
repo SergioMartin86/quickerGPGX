@@ -35,14 +35,30 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-#include <string.h>
-#include "../system.h"
-#include "../genesis.h"
-#include "../m68k/m68k.h"
-#include "../mem68k.h"
-#include "../membnk.h"
-#include "../state.h"
-#include "sram.h"
+#include "shared.h"
+
+typedef struct
+{
+  uint8 unlock;
+  uint8 bank0;
+  uint8 special;
+  uint8 writeEnable;
+  uint8 overlayEnable;
+  uint8 playbackLoop;
+  uint8 playbackLoopTrack;
+  uint8 playbackEndTrack;
+  uint16 result;
+  uint16 fadeoutStartVolume;
+  int fadeoutSamplesTotal;
+  int fadeoutSamplesCount;
+  int playbackSamplesCount;
+  int playbackLoopSector;
+  int playbackEndSector;
+  uint8 buffer[0x800];
+} T_MEGASD_HW;
+
+/* MegaSD mapper hardware */
+static T_MEGASD_HW megasd_hw;
 
 /* Internal function prototypes */
 static void megasd_ctrl_write_byte(unsigned int address, unsigned int data);
@@ -84,6 +100,40 @@ void megasd_reset(void)
   }
 }
 
+int megasd_context_save(uint8 *state)
+{
+  int bufferptr = 0;
+
+  save_param(&megasd_hw, sizeof(megasd_hw));
+
+  /* save needed CD hardware state (only if not already saved) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_save(&state[bufferptr]);
+    bufferptr += pcm_context_save(&state[bufferptr]);
+    save_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
+
+  return bufferptr;
+}
+
+int megasd_context_load(uint8 *state)
+{
+  int bufferptr = 0;
+
+  load_param(&megasd_hw, sizeof(megasd_hw));
+
+  /* load needed CD hardware state (only if not already loaded) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_load(&state[bufferptr], STATE_VERSION);
+    bufferptr += pcm_context_load(&state[bufferptr]);
+    load_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
+
+  return bufferptr;
+}
+
 /*
   Enhanced "SSF2" mapper
 */
@@ -107,7 +157,6 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
         /* map bank #0 selected ROM page to $000000-$07ffff */
         for (i=0x00; i<0x08; i++)
         {
-          m68k.memory_map[i].target = MM_TARGET_CART_ROM;
           m68k.memory_map[i].base = cart.rom + (((megasd_hw.bank0 & 0x0f) << 19) & cart.mask) + (i<<16);
         }
       }
@@ -122,7 +171,6 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
         /* reset default ROM mapping in $000000-$07ffff */
         for (i=0x00; i<0x08; i++)
         {
-          m68k.memory_map[i].target = MM_TARGET_CART_ROM;
           m68k.memory_map[i].base = cart.rom + (i<<16);
         }
       }
@@ -176,10 +224,10 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
       if (address & 1)
       {
         /* 512K ROM paging (max. 8MB)*/
-        uint8_t *src = cart.rom + (((data  & 0x0f) << 19) & cart.mask);
+        uint8 *src = cart.rom + (((data  & 0x0f) << 19) & cart.mask);
 
         /* cartridge area ($000000-$3FFFFF) is divided into 8 x 512K banks */
-        uint8_t bank = (address << 2) & 0x38;
+        uint8 bank = (address << 2) & 0x38;
 
         /* check selected bank is not locked */
         if ((bank != 0x00) || megasd_hw.unlock)
@@ -187,7 +235,6 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
           /* selected ROM page is mapped to selected bank */
           for (i=0; i<8; i++)
           {
-            m68k.memory_map[i].target = MM_TARGET_CART_ROM;
             m68k.memory_map[bank + i].base = src + (i<<16);
           }
         }
@@ -209,7 +256,6 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
       /* SRAM mapped in $380000-$3fffff (max 16KB) */
       for (i=0x38; i<0x40; i++)
       {
-        m68k.memory_map[i].target = MM_TARGET_SRAM;
         m68k.memory_map[i].base    = sram.sram;
         m68k.memory_map[i].read8   = sram_read_byte;
         m68k.memory_map[i].read16  = sram_read_word;
@@ -224,7 +270,6 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
       /* PCM hardware mapped in $380000-$3fffff */
       for (i=0x38; i<0x40; i++)
       {
-        m68k.memory_map[i].target = MM_TARGET_NULL;
         m68k.memory_map[i].base    = NULL;
         m68k.memory_map[i].read8   = megasd_pcm_read_byte;
         m68k.memory_map[i].read16  = megasd_pcm_read_word;
@@ -237,12 +282,11 @@ void megasd_enhanced_ssf2_mapper_w(unsigned int address, unsigned int data)
     else
     {
       /* 512K ROM paging (max. 8MB)*/
-      uint8_t *src = cart.rom + (((megasd_hw.special & 0x0f) << 19) & cart.mask);
+      uint8 *src = cart.rom + (((megasd_hw.special & 0x0f) << 19) & cart.mask);
 
       /* selected ROM page mapped in $380000-$3fffff */
       for (i=0x38; i<0x40; i++)
       {
-        m68k.memory_map[i].target = MM_TARGET_CART_ROM;
         m68k.memory_map[i].base    = src + (i << 16);;
         m68k.memory_map[i].read8   = NULL;
         m68k.memory_map[i].read16  = NULL;
@@ -914,7 +958,7 @@ static unsigned int megasd_ctrl_read_word(unsigned int address)
   }
 
   /* default cartridge area */
-  return *(uint16_t *)(m68k.memory_map[0x03].base + (address & 0xfffe));
+  return *(uint16 *)(m68k.memory_map[0x03].base + (address & 0xfffe));
 }
 
 /* 

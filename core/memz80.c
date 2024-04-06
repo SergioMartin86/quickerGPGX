@@ -39,17 +39,8 @@
  *
  ****************************************************************************************/
 
-#include <config.h>
-#include "m68k/m68k.h"
-#include "z80/z80.h"
-#include "sound/sound.h"
-#include "sound/psg.h"
-#include "system.h"
-#include "genesis.h"
-#include "vdp_ctrl.h"
-#include "membnk.h"
-#include "io_ctrl.h"
-#include "state.h"
+#include "shared.h"
+
 
 /*--------------------------------------------------------------------------*/
 /*  Handlers for access to unused addresses and those which make the        */
@@ -618,7 +609,7 @@ unsigned char z80_ms_port_r(unsigned int port)
       }
       else
       {
-        uint8_t data = 0xFF;
+        uint8 data = 0xFF;
 
         /* read FM board if enabled */
         if (!(port & 4) && (config.ym2413 & 1))

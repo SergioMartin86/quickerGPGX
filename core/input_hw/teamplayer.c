@@ -36,9 +36,15 @@
  *
  ****************************************************************************************/
 
-#include "../macros.h"
-#include "../state.h"
-#include "input.h"
+#include "shared.h"
+
+static struct
+{
+  uint8 State;
+  uint8 Counter;
+  uint8 Table[12];
+} teamplayer[2];
+
 
 void teamplayer_init(int port)
 {

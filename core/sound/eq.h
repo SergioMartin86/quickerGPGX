@@ -16,7 +16,8 @@
 //
 //----------------------------------------------------------------------------*/
 
-#pragma once
+#ifndef __EQ3BAND__
+#define __EQ3BAND__
 
 /* ------------
 //| Structures |
@@ -63,3 +64,4 @@ extern void init_3band_state(EQSTATE * es, int lowfreq, int highfreq,
 extern double do_3band(EQSTATE * es, int sample);
 
 
+#endif        /* #ifndef __EQ3BAND__ */

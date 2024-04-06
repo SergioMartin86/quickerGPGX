@@ -36,9 +36,13 @@
  *
  ****************************************************************************************/
 
-#include "../macros.h"
-#include "../state.h"
-#include "input.h"
+#include "shared.h"
+
+static struct
+{
+  uint8 State;
+  uint8 Counter;
+} sportspad[2];
 
 void sportspad_reset(int index)
 {

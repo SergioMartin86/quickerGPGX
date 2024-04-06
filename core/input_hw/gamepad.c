@@ -37,12 +37,13 @@
  *
  ****************************************************************************************/
 
-#include "../system.h"
-#include "../m68k/m68k.h"
-#include "../z80/z80.h"
-#include "../input_hw/input.h"
-#include "../state.h"
+#include "shared.h"
 #include "gamepad.h"
+
+struct gamepad_t gamepad[MAX_DEVICES];
+struct flipflop_t flipflop[2];
+uint8 latch;
+
 
 void gamepad_reset(int port)
 {

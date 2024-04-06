@@ -36,15 +36,8 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
-
-struct sportspad_t
-{
-  uint8_t State;
-  uint8_t Counter;
-};
+#ifndef _SPORTSPAD_H_
+#define _SPORTSPAD_H_
 
 /* Function prototypes */
 extern void sportspad_reset(int index);
@@ -53,3 +46,4 @@ extern unsigned char sportspad_2_read(void);
 extern void sportspad_1_write(unsigned char data, unsigned char mask);
 extern void sportspad_2_write(unsigned char data, unsigned char mask);
 
+#endif

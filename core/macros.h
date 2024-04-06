@@ -1,6 +1,5 @@
-#pragma once
-
-#include <stdio.h>
+#ifndef _MACROS_H_
+#define _MACROS_H_
 
 #ifdef LSB_FIRST
 
@@ -68,3 +67,4 @@
 #define cdStreamGets        fgets
 #endif
 
+#endif /* _MACROS_H_ */

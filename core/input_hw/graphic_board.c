@@ -36,8 +36,14 @@
  *
  ****************************************************************************************/
 
-#include "../state.h"
-#include "input.h"
+#include "shared.h"
+
+static struct
+{
+  uint8 State;
+  uint8 Counter;
+  uint8 Port;
+} board;
 
 void graphic_board_reset(int port)
 {
@@ -50,7 +56,7 @@ void graphic_board_reset(int port)
 
 unsigned char graphic_board_read(void)
 {
-  uint8_t data;
+  uint8 data;
 
   if (board.State & 0x20)
   {

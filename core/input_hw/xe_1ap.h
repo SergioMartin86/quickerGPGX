@@ -36,16 +36,8 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
-
-struct xe_1ap_t
-{
-  uint8_t State;
-  uint8_t Counter;
-  uint8_t Latency;
-};
+#ifndef _XE_1APH_
+#define _XE_1APH_
 
 /* Function prototypes */
 extern void xe_1ap_reset(int index);
@@ -54,3 +46,4 @@ extern unsigned char xe_1ap_2_read(void);
 extern void xe_1ap_1_write(unsigned char data, unsigned char mask);
 extern void xe_1ap_2_write(unsigned char data, unsigned char mask);
 
+#endif

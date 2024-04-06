@@ -36,8 +36,15 @@
  *
  ****************************************************************************************/
 
-#include "input.h"
-#include "../state.h"
+#include "shared.h"
+
+static struct
+{
+  uint8 State;
+  uint8 Counter;
+  uint8 Wait;
+  uint8 Port;
+} mouse;
 
 void mouse_reset(int port)
 {

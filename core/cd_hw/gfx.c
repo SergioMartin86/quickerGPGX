@@ -35,11 +35,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-
-#include <string.h>
-#include "../genesis.h"
-#include "../state.h"
-#include "../m68k/m68k.h"
+#include "shared.h"
 
 /***************************************************************/
 /*          WORD-RAM DMA interfaces (1M & 2M modes)            */
@@ -47,16 +43,16 @@
 
 void word_ram_0_dma_w(unsigned int length)
 {
-  uint16_t data;
+  uint16 data;
 
   /* 16-bit DMA only */
   unsigned int words = length >> 1;
 
   /* CDC buffer source address */
-  uint16_t src_index = cdc.dac.w & 0x3ffe;
+  uint16 src_index = cdc.dac.w & 0x3ffe;
 
   /* WORD-RAM destination address*/
-  uint32_t dst_index = (scd.regs[0x0a>>1].w << 3) & 0x1fffe;
+  uint32 dst_index = (scd.regs[0x0a>>1].w << 3) & 0x1fffe;
 
   /* update DMA destination address */
   scd.regs[0x0a>>1].w += (words >> 2);
@@ -71,7 +67,7 @@ void word_ram_0_dma_w(unsigned int length)
     data = READ_WORD(cdc.ram, src_index);
 
     /* write 16-bit word to WORD-RAM */
-    *(uint16_t *)(scd.word_ram[0] + dst_index) = data ;
+    *(uint16 *)(scd.word_ram[0] + dst_index) = data ;
 
     /* increment CDC buffer source address */
     src_index = (src_index + 2) & 0x3ffe;
@@ -83,16 +79,16 @@ void word_ram_0_dma_w(unsigned int length)
 
 void word_ram_1_dma_w(unsigned int length)
 {
-  uint16_t data;
+  uint16 data;
 
   /* 16-bit DMA only */
   unsigned int words = length >> 1;
 
   /* CDC buffer source address */
-  uint16_t src_index = cdc.dac.w & 0x3ffe;
+  uint16 src_index = cdc.dac.w & 0x3ffe;
 
   /* WORD-RAM destination address*/
-  uint32_t dst_index = ((scd.regs[0x0a>>1].w << 3) & 0x1fffe);
+  uint32 dst_index = ((scd.regs[0x0a>>1].w << 3) & 0x1fffe);
 
   /* update DMA destination address */
   scd.regs[0x0a>>1].w += (words >> 2);
@@ -107,7 +103,7 @@ void word_ram_1_dma_w(unsigned int length)
     data = READ_WORD(cdc.ram, src_index);
 
     /* write 16-bit word to WORD-RAM */
-    *(uint16_t *)(scd.word_ram[1] + dst_index) = data ;
+    *(uint16 *)(scd.word_ram[1] + dst_index) = data ;
 
     /* increment CDC buffer source address */
     src_index = (src_index + 2) & 0x3ffe;
@@ -119,16 +115,16 @@ void word_ram_1_dma_w(unsigned int length)
 
 void word_ram_2M_dma_w(unsigned int length)
 {
-  uint16_t data;
+  uint16 data;
 
   /* 16-bit DMA only */
   unsigned int words = length >> 1;
 
   /* CDC buffer source address */
-  uint16_t src_index = cdc.dac.w & 0x3ffe;
+  uint16 src_index = cdc.dac.w & 0x3ffe;
 
   /* WORD-RAM destination address*/
-  uint32_t dst_index = (scd.regs[0x0a>>1].w << 3) & 0x3fffe;
+  uint32 dst_index = (scd.regs[0x0a>>1].w << 3) & 0x3fffe;
 
   /* update DMA destination address */
   scd.regs[0x0a>>1].w += (words >> 2);
@@ -143,7 +139,7 @@ void word_ram_2M_dma_w(unsigned int length)
     data = READ_WORD(cdc.ram, src_index);
 
     /* write 16-bit word to WORD-RAM */
-    *(uint16_t *)(scd.word_ram_2M + dst_index) = data ;
+    *(uint16 *)(scd.word_ram_2M + dst_index) = data ;
 
     /* increment CDC buffer source address */
     src_index = (src_index + 2) & 0x3ffe;
@@ -160,19 +156,19 @@ void word_ram_2M_dma_w(unsigned int length)
 
 unsigned int dot_ram_0_read16(unsigned int address)
 {
-  uint8_t data = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
+  uint8 data = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
   return ((data & 0x0f) | ((data << 4) & 0xf00));
 }
 
 unsigned int dot_ram_1_read16(unsigned int address)
 {
-  uint8_t data = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
+  uint8 data = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
   return ((data & 0x0f) | ((data << 4) & 0xf00));
 }
 
 void dot_ram_0_write16(unsigned int address, unsigned int data)
 {
-  uint8_t prev;
+  uint8 prev;
   address = (address >> 1) & 0x1ffff;
   prev = READ_BYTE(scd.word_ram[0], address);
   data = (data & 0x0f) | ((data >> 4) & 0xf0);
@@ -182,7 +178,7 @@ void dot_ram_0_write16(unsigned int address, unsigned int data)
 
 void dot_ram_1_write16(unsigned int address, unsigned int data)
 {
-  uint8_t prev;
+  uint8 prev;
   address = (address >> 1) & 0x1ffff;
   prev = READ_BYTE(scd.word_ram[1], address);
   data = (data & 0x0f) | ((data >> 4) & 0xf0);
@@ -192,7 +188,7 @@ void dot_ram_1_write16(unsigned int address, unsigned int data)
 
 unsigned int dot_ram_0_read8(unsigned int address)
 {
-  uint8_t data = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
+  uint8 data = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
 
   if (address & 1)
   {
@@ -204,7 +200,7 @@ unsigned int dot_ram_0_read8(unsigned int address)
 
 unsigned int dot_ram_1_read8(unsigned int address)
 {
-  uint8_t data = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
+  uint8 data = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
 
   if (address & 1)
   {
@@ -216,7 +212,7 @@ unsigned int dot_ram_1_read8(unsigned int address)
 
 void dot_ram_0_write8(unsigned int address, unsigned int data)
 {
-  uint8_t prev = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
+  uint8 prev = READ_BYTE(scd.word_ram[0], (address >> 1) & 0x1ffff);
 
   if (address & 1)
   {
@@ -233,7 +229,7 @@ void dot_ram_0_write8(unsigned int address, unsigned int data)
 
 void dot_ram_1_write8(unsigned int address, unsigned int data)
 {
-  uint8_t prev = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
+  uint8 prev = READ_BYTE(scd.word_ram[1], (address >> 1) & 0x1ffff);
 
   if (address & 1)
   {
@@ -256,25 +252,25 @@ void dot_ram_1_write8(unsigned int address, unsigned int data)
 unsigned int cell_ram_0_read16(unsigned int address)
 {
   address = gfx.lut_offset[(address >> 2) & 0x7fff] | (address & 0x10002);
-  return *(uint16_t *)(scd.word_ram[0] + address);
+  return *(uint16 *)(scd.word_ram[0] + address);
 }
 
 unsigned int cell_ram_1_read16(unsigned int address)
 {
   address = gfx.lut_offset[(address >> 2) & 0x7fff] | (address & 0x10002);
-  return *(uint16_t *)(scd.word_ram[1] + address);
+  return *(uint16 *)(scd.word_ram[1] + address);
 }
 
 void cell_ram_0_write16(unsigned int address, unsigned int data)
 {
   address = gfx.lut_offset[(address >> 2) & 0x7fff] | (address & 0x10002);
-  *(uint16_t *)(scd.word_ram[0] + address) = data;
+  *(uint16 *)(scd.word_ram[0] + address) = data;
 }
 
 void cell_ram_1_write16(unsigned int address, unsigned int data)
 {
   address = gfx.lut_offset[(address >> 2) & 0x7fff] | (address & 0x10002);
-  *(uint16_t *)(scd.word_ram[1] + address) = data;
+  *(uint16 *)(scd.word_ram[1] + address) = data;
 }
 
 unsigned int cell_ram_0_read8(unsigned int address)
@@ -309,8 +305,8 @@ void cell_ram_1_write8(unsigned int address, unsigned int data)
 void gfx_init(void)
 {
   int i, j;
-  uint16_t offset;
-  uint8_t mask, row, col, temp;
+  uint16 offset;
+  uint8 mask, row, col, temp;
 
   memset(&gfx, 0, sizeof(gfx_t));
 
@@ -423,22 +419,66 @@ void gfx_reset(void)
   gfx.cycles = 0;
 }
 
-INLINE void gfx_render(uint32_t bufferIndex, uint32_t width)
+int gfx_context_save(uint8 *state)
 {
-  uint8_t pixel_in, pixel_out;
-  uint16_t stamp_data;
-  uint32_t stamp_index;
+  uint32 tmp32;
+  int bufferptr = 0;
+
+  save_param(&gfx.cycles, sizeof(gfx.cycles));
+  save_param(&gfx.cyclesPerLine, sizeof(gfx.cyclesPerLine));
+  save_param(&gfx.dotMask, sizeof(gfx.dotMask));
+  save_param(&gfx.stampShift, sizeof(gfx.stampShift));
+  save_param(&gfx.mapShift, sizeof(gfx.mapShift));
+  save_param(&gfx.bufferOffset, sizeof(gfx.bufferOffset));
+  save_param(&gfx.bufferStart, sizeof(gfx.bufferStart));
+
+  tmp32 = (uint8 *)(gfx.tracePtr) - scd.word_ram_2M;
+  save_param(&tmp32, 4);
+
+  tmp32 = (uint8 *)(gfx.mapPtr) - scd.word_ram_2M;
+  save_param(&tmp32, 4);
+
+  return bufferptr;
+}
+
+int gfx_context_load(uint8 *state)
+{
+  uint32 tmp32;
+  int bufferptr = 0;
+
+  load_param(&gfx.cycles, sizeof(gfx.cycles));
+  load_param(&gfx.cyclesPerLine, sizeof(gfx.cyclesPerLine));
+  load_param(&gfx.dotMask, sizeof(gfx.dotMask));
+  load_param(&gfx.stampShift, sizeof(gfx.stampShift));
+  load_param(&gfx.mapShift, sizeof(gfx.mapShift));
+  load_param(&gfx.bufferOffset, sizeof(gfx.bufferOffset));
+  load_param(&gfx.bufferStart, sizeof(gfx.bufferStart));
+
+  load_param(&tmp32, 4);
+  gfx.tracePtr = (uint16 *)(scd.word_ram_2M + tmp32);
+
+  load_param(&tmp32, 4);
+  gfx.mapPtr = (uint16 *)(scd.word_ram_2M + tmp32);
+
+  return bufferptr;
+}
+
+INLINE void gfx_render(uint32 bufferIndex, uint32 width)
+{
+  uint8 pixel_in, pixel_out;
+  uint16 stamp_data;
+  uint32 stamp_index;
 
   /* bits [1:0] of 32x32 pixels stamp index are masked (see Chuck Rock II - Son of Chuck) */
-  uint32_t stamp_mask = (scd.regs[0x58>>1].byte.l & 0x02) ? 0x7fc : 0x7ff;
+  uint32 stamp_mask = (scd.regs[0x58>>1].byte.l & 0x02) ? 0x7fc : 0x7ff;
 
   /* pixel map start position for current line (13.3 format converted to 13.11) */
-  uint32_t xpos = *gfx.tracePtr++ << 8;
-  uint32_t ypos = *gfx.tracePtr++ << 8;
+  uint32 xpos = *gfx.tracePtr++ << 8;
+  uint32 ypos = *gfx.tracePtr++ << 8;
 
   /* pixel map offset values for current line (5.11 format) */
-  uint32_t xoffset = (int16_t) *gfx.tracePtr++;
-  uint32_t yoffset = (int16_t) *gfx.tracePtr++;
+  uint32 xoffset = (int16) *gfx.tracePtr++;
+  uint32 yoffset = (int16) *gfx.tracePtr++;
 
   /* process all dots */
   while (width--)
@@ -555,10 +595,10 @@ INLINE void gfx_render(uint32_t bufferIndex, uint32_t width)
 
 void gfx_start(unsigned int base, int cycles)
 {
-  uint32_t mask;
+  uint32 mask;
 
   /* trace vector pointer */
-  gfx.tracePtr = (uint16_t *)(scd.word_ram_2M + ((base << 2) & 0x3fff8));
+  gfx.tracePtr = (uint16 *)(scd.word_ram_2M + ((base << 2) & 0x3fff8));
 
   /* stamps & stamp map size */
   switch ((scd.regs[0x58>>1].byte.l >> 1) & 0x03)
@@ -593,7 +633,7 @@ void gfx_start(unsigned int base, int cycles)
   }
 
   /* stamp map table base address */
-  gfx.mapPtr = (uint16_t *)(scd.word_ram_2M + ((scd.regs[0x5a>>1].w << 2) & mask));
+  gfx.mapPtr = (uint16 *)(scd.word_ram_2M + ((scd.regs[0x5a>>1].w << 2) & mask));
 
   /* image buffer column offset (64 pixels/cell, minus 7 pixels to restart at cell beginning) */
   gfx.bufferOffset = (((scd.regs[0x5c>>1].byte.l & 0x1f) + 1) << 6) - 7;

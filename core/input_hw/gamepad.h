@@ -37,23 +37,28 @@
  *
  ****************************************************************************************/
 
-#pragma once
+#ifndef _GAMEPAD_H_
+#define _GAMEPAD_H_
 
-#include <stdint.h>
+#include "../types.h"
 
 struct gamepad_t
 {
-  uint8_t State;
-  uint8_t Counter;
-  uint8_t Timeout;
-  uint32_t Latency;
+  uint8 State;
+  uint8 Counter;
+  uint8 Timeout;
+  uint32 Latency;
 };
 
 struct flipflop_t
 {
-  uint8_t Latch;
-  uint8_t Counter;
+  uint8 Latch;
+  uint8 Counter;
 };
+
+extern struct gamepad_t gamepad[MAX_DEVICES];
+extern struct flipflop_t flipflop[2];
+extern uint8 latch;
 
 /* Function prototypes */
 extern void gamepad_reset(int port);
@@ -74,3 +79,4 @@ extern unsigned char mastertap_2_read(void);
 extern void mastertap_1_write(unsigned char data, unsigned char mask);
 extern void mastertap_2_write(unsigned char data, unsigned char mask);
 
+#endif

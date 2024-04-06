@@ -40,37 +40,21 @@
  *
  ****************************************************************************************/
 
-#pragma once 
-
-#include <stdint.h>
+#ifndef _PSG_H_
+#define _PSG_H_
 
 typedef enum {
   PSG_DISCRETE,
   PSG_INTEGRATED
 } PSG_TYPE;
 
-struct psg_t
-{
-  int clocks;
-  int latch;
-  int zeroFreqInc;
-  int noiseShiftValue;
-  int noiseShiftWidth;
-  int noiseBitMask;
-  int regs[8];
-  int freqInc[4];
-  int freqCounter[4];
-  int polarity[4];
-  int chanDelta[4][2];
-  int chanOut[4][2];
-  int chanAmp[4][2];
-};
-
 /* Function prototypes */
 extern void psg_init(PSG_TYPE type);
 extern void psg_reset(void);
-extern int psg_context_save(uint8_t *state);
-extern int psg_context_load(uint8_t *state);
+extern int psg_context_save(uint8 *state);
+extern int psg_context_load(uint8 *state);
 extern void psg_write(unsigned int clocks, unsigned int data);
 extern void psg_config(unsigned int clocks, unsigned int preamp, unsigned int panning);
 extern void psg_end_frame(unsigned int clocks);
+
+#endif /* _PSG_H_ */

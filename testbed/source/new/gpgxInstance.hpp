@@ -6,22 +6,19 @@
 #include <jaffarCommon/serializers/contiguous.hpp>
 #include <jaffarCommon/deserializers/contiguous.hpp>
 
+#define DUMMY_SIZE 1048576
+
 extern "C"
 { 
-//  int state_load(unsigned char *state);
-//  int state_save(unsigned char *state);
+ int state_load(unsigned char *state);
+ int state_save(unsigned char *state);
  void initialize();
  void initializeVideoOutput();
  void finalizeVideoOutput();
  void loadROM(const char* filePath);
  void renderFrame();
  void advanceFrame(const uint16_t controller1, const uint16_t controller2);
- size_t saveState(uint8_t* buffer);
- void loadState(const uint8_t* buffer);
- int state_save(unsigned char *state);
- void state_load(const uint8_t* buffer);
  uint8_t* getWorkRamPtr();
- void printMemoryMapChecksum();
 }
 
 namespace gpgx
@@ -47,11 +44,6 @@ class EmuInstance : public EmuInstanceBase
   {
     ::loadROM(romFilePath.c_str());
 
-    #define DUMMY_SIZE 2*1024*1024
-    void* buf = malloc(DUMMY_SIZE);
-    _partialSize = ::state_save((uint8_t*)buf);
-    free(buf);
-
     return true;
   }
 
@@ -73,25 +65,25 @@ class EmuInstance : public EmuInstanceBase
   {
   }
 
-  int _partialSize = 0;
-
   void serializeState(jaffarCommon::serializer::Base& s) const override
   {
-    ::state_save(s.getOutputDataBuffer());
-    ::saveState(&(s.getOutputDataBuffer())[_partialSize]);
+    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
+    auto size = ::state_save(buffer);
+    s.push(buffer, size);
+    free (buffer);
   }
 
   void deserializeState(jaffarCommon::deserializer::Base& d) override
   {
     ::state_load((unsigned char*)d.getInputDataBuffer());
-    ::loadState(&((unsigned char*)d.getInputDataBuffer())[_partialSize]);
   }
 
   size_t getStateSizeImpl() const override
   {
-    auto size = ::saveState(nullptr);
-
-    return _partialSize + size;
+    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
+    auto size = ::state_save(buffer);
+    free (buffer);
+    return size;
   }
 
   void updateRenderer() override

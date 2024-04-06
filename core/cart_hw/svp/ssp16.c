@@ -189,10 +189,8 @@
  *   'ld d, (a)' loads from program ROM
  */
 
-#include "../../genesis.h"
-#include "../../state.h"
-#include "ssp16.h"
-#include "svp.h"
+#include "shared.h"
+
 
 #define u32 unsigned int
 
@@ -219,6 +217,10 @@
 #define rIJ    ssp->ptr.r
 
 #define IJind  (((op>>6)&4)|(op&3))
+
+#define GET_PC() (PC - (unsigned short *)svp->iram_rom)
+#define GET_PPC_OFFS() ((unsigned char *)PC - svp->iram_rom - 2)
+#define SET_PC(d) PC = (unsigned short *)svp->iram_rom + d
 
 #define REG_READ(r) (((r) <= 4) ? ssp->gr[r].byte.h : read_handlers[r]())
 #define REG_WRITE(r,d) { \
@@ -335,6 +337,11 @@
     break; \
   } \
 }
+
+
+static ssp1601_t *ssp = NULL;
+static unsigned short *PC;
+static int g_cycles;
 
 #ifdef USE_DEBUGGER
 static int running = 0;

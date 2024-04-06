@@ -36,20 +36,12 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
-
-struct mouse_t
-{
-  uint8_t State;
-  uint8_t Counter;
-  uint8_t Wait;
-  uint8_t Port;
-};
+#ifndef _MOUSE_H_
+#define _MOUSE_H_
 
 /* Function prototypes */
 extern void mouse_reset(int port);
 extern unsigned char mouse_read(void);
 extern void mouse_write(unsigned char data, unsigned char mask);
 
+#endif

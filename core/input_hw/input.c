@@ -37,10 +37,7 @@
  *
  ****************************************************************************************/
 
-#include <config.h>
-#include "../loadrom.h"
-#include "../system.h"
-#include "../genesis.h"
+#include "shared.h"
 #include "gamepad.h"
 #include "lightgun.h"
 #include "mouse.h"
@@ -51,8 +48,10 @@
 #include "sportspad.h"
 #include "terebi_oekaki.h"
 #include "graphic_board.h"
-#include "input.h"
-#include "state.h"
+
+t_input input;
+int old_system[2] = {-1,-1};
+
 
 void input_init(void)
 {

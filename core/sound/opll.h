@@ -40,7 +40,8 @@
  *  version: 1.0
  */
 
-#pragma once
+#ifndef OPLL_H
+#define OPLL_H
 
 #include <stdint.h>
 
@@ -211,3 +212,4 @@ typedef struct {
 void OPLL_Reset(opll_t *chip, uint32_t chip_type);
 void OPLL_Clock(opll_t *chip, int32_t *buffer);
 void OPLL_Write(opll_t *chip, uint32_t port, uint8_t data);
+#endif

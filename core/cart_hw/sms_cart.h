@@ -36,65 +36,22 @@
  *
  ****************************************************************************************/
 
-#pragma once
+#ifndef _SMS_CART_H_
+#define _SMS_CART_H_
 
 /* Special hardware */
 #define HW_3D_GLASSES     0x01
 #define HW_TEREBI_OEKAKI  0x02
 
-#define MAPPER_NONE           (0x00)
-#define MAPPER_TEREBI         (0x01)
-#define MAPPER_RAM_2K         (0x02)
-#define MAPPER_RAM_8K         (0x03)
-#define MAPPER_RAM_8K_EXT1    (0x04)
-#define MAPPER_SEGA           (0x10)
-#define MAPPER_SEGA_X         (0x11)
-#define MAPPER_93C46          (0x12)
-#define MAPPER_CODIES         (0x13)
-#define MAPPER_MULTI_16K      (0x14)
-#define MAPPER_KOREA          (0x15)
-#define MAPPER_KOREA_16K      (0x16)
-#define MAPPER_MULTI_2x16K_V1 (0x17)
-#define MAPPER_MULTI_2x16K_V2 (0x18)
-#define MAPPER_MULTI_16K_32K  (0x19)
-#define MAPPER_ZEMINA_16K_32K (0x1A)
-#define MAPPER_HWASUNG        (0x1B)
-#define MAPPER_KOREA_8K       (0x20)
-#define MAPPER_MSX            (0x21)
-#define MAPPER_MSX_NEMESIS    (0x22)
-#define MAPPER_MULTI_8K       (0x23)
-#define MAPPER_MULTI_4x8K     (0x24)
-#define MAPPER_ZEMINA_4x8K    (0x25)
-#define MAPPER_MULTI_32K      (0x40)
-#define MAPPER_MULTI_32K_16K  (0x41)
-#define MAPPER_HICOM          (0x42)
-
-typedef struct
-{
-  uint32_t crc;
-  uint8_t g_3d;
-  uint8_t fm;
-  uint8_t peripheral;
-  uint8_t mapper;
-  uint8_t system;
-  uint8_t region;
-} rominfo_t;
-
-typedef struct
-{
-  uint8_t fcr[4];
-  uint8_t mapper;
-  uint16_t pages;
-} romhw_t;
-
 /* Function prototypes */
 extern void sms_cart_init(void);
 extern void sms_cart_reset(void);
-extern void sms_cart_switch(uint8_t mode);
+extern void sms_cart_switch(uint8 mode);
 extern int sms_cart_ram_size(void);
 extern int sms_cart_region_detect(void);
-extern int sms_cart_context_save(uint8_t *state);
-extern int sms_cart_context_load(uint8_t *state);
+extern int sms_cart_context_save(uint8 *state);
+extern int sms_cart_context_load(uint8 *state);
 
+#endif
 
 

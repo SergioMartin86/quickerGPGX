@@ -2,8 +2,6 @@
 
 /* Common implementation of NTSC filters */
 
-#pragma once
-
 #include <assert.h>
 #include <math.h>
 

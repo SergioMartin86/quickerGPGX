@@ -36,15 +36,8 @@
  *
  ****************************************************************************************/
 
-#pragma once
-
-#include <stdint.h>
-
-struct lightgun_t
-{
-  uint8_t State;
-  uint8_t Port;
-};
+#ifndef _LIGHTGUN_H_
+#define _LIGHTGUN_H_
 
 /* Input devices port handlers */
 extern void lightgun_reset(int index);
@@ -55,3 +48,4 @@ extern unsigned char menacer_read(void);
 extern unsigned char justifier_read(void);
 extern void justifier_write(unsigned char data, unsigned char mask);
 
+#endif

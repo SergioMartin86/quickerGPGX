@@ -1,8 +1,7 @@
 .vs/
-.vscode/
 Debug/
 Release/
-
+.vscode/
 psp2/*.o
 psp2/*.elf
 psp2/*.velf
