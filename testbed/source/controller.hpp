@@ -12,7 +12,8 @@ class Controller
 {
 public:
 
-  enum controller_t { none, gamepad2b, gamepad3b, gamepad6b };
+  enum system_t { genesis, gamegear, sms, segacd };
+  enum controller_t { none, gamepad2b, gamegear2b, gamepad3b, gamepad6b,  };
 
   typedef uint16_t port_t;
 
@@ -20,6 +21,9 @@ public:
   {
     bool power = false;
     bool reset = false;
+    bool pause = false;
+    bool previousDisc = false;
+    bool nextDisc = false;
     port_t port1 = 0;
     port_t port2 = 0;
   };
@@ -36,7 +40,7 @@ public:
     if (ss.get() != '|') isValid = false;
 
     // Parsing console inputs
-    isValid &= parseConsoleInputs(_controller1Type, _input.reset, _input.power, ss);
+    isValid &= parseConsoleInputs(_input, _systemType, ss);
     
     // Parsing controller 1 inputs
     isValid &= parseControllerInputs(_controller1Type, _input.port1, ss);
@@ -55,6 +59,7 @@ public:
     return isValid;
   };
 
+  inline void setSystemType(const system_t type) { _systemType = type; }
   inline void setController1Type(const controller_t type) { _controller1Type = type; }
   inline void setController2Type(const controller_t type) { _controller2Type = type; }
 
@@ -168,7 +173,8 @@ public:
     return true;
   }
 
-  static bool parseGamePad2BInput(uint16_t& code, std::istringstream& ss)
+
+  static bool parseGameGearInput(uint16_t& code, std::istringstream& ss)
   {
     // Currently read character
     char c;
@@ -208,6 +214,41 @@ public:
     return true;
   }
 
+  static bool parseGamePad2BInput(uint16_t& code, std::istringstream& ss)
+  {
+    // Currently read character
+    char c;
+
+    // Cleaning code
+    code = 0;
+
+    c = ss.get();
+    if (c != '.' && c != 'U') return false;
+    if (c == 'U') code |= INPUT_UP;
+
+    c = ss.get();
+    if (c != '.' && c != 'D') return false;
+    if (c == 'D') code |= INPUT_DOWN;
+
+    c = ss.get();
+    if (c != '.' && c != 'L') return false;
+    if (c == 'L') code |= INPUT_LEFT;
+
+    c = ss.get();
+    if (c != '.' && c != 'R') return false;
+    if (c == 'R') code |= INPUT_RIGHT;
+
+    c = ss.get();
+    if (c != '.' && c != '1') return false;
+    if (c == '1') code |= INPUT_BUTTON1;
+
+    c = ss.get();
+    if (c != '.' && c != '2') return false;
+    if (c == '2') code |= INPUT_BUTTON2;
+
+    return true;
+  }
+
   static bool parseControllerInputs(const controller_t type, port_t& port, std::istringstream& ss)
   {
     // Parse valid flag
@@ -219,7 +260,22 @@ public:
     // Controller separator
     if (ss.get() != '|') isValid = false;
 
-    // If normal gamepad, parse its code now
+
+    // If game gear input, parse 2 buttons and start
+    if (type == controller_t::gamegear2b) 
+    {
+      // Storage for gamepad's code
+      uint16_t code = 0;
+
+      // Parsing gamepad code
+      isValid &= parseGameGearInput(code, ss);
+
+      // Pushing input code into the port
+      port = code;
+    }
+
+
+    // If its sms input, parse two buttons
     if (type == controller_t::gamepad2b) 
     {
       // Storage for gamepad's code
@@ -232,7 +288,7 @@ public:
       port = code;
     }
 
-    // If normal gamepad, parse its code now
+    // If normal genesis, parse 3 buttons
     if (type == controller_t::gamepad3b) 
     {
       // Storage for gamepad's code
@@ -245,7 +301,7 @@ public:
       port = code;
     }
 
-    // If 6b gamepad, parse its code now
+    // If 6b genesis, parse its code now
     if (type == controller_t::gamepad6b) 
     {
       // Storage for gamepad's code
@@ -262,7 +318,7 @@ public:
     return isValid;
   }
 
-  static bool parseConsoleInputs(const controller_t type, bool& reset, bool& power, std::istringstream& ss)
+  static bool parseConsoleInputs(input_t& input, const system_t type, std::istringstream& ss)
   {
     // Parse valid flag
     bool isValid = true; 
@@ -270,28 +326,77 @@ public:
     // Currently read character
     char c;
 
-    // If its master system, we only parse the reset button
-
-    if (type != controller_t::gamepad2b)
-    {
-      // Power trigger
+    // If its game gear, there is only the reset button
+    if (type == system_t::gamegear)
+    { 
       c = ss.get();
-      if (c != '.' && c != 'P') isValid = false;
-      if (c == 'P') power = true;
-      if (c == '.') power = false;
+      if (c != '.' && c != 'r') isValid = false;
+      if (c == 'r') input.reset = true;
+      if (c == '.') input.reset = false;
+
+      return true;
+   }
+
+    // If its master system, we parse reset and pause buttons
+    if (type == system_t::sms)
+    {
+      c = ss.get();
+      if (c != '.' && c != 'r') isValid = false;
+      if (c == 'r') input.reset = true;
+      if (c == '.') input.reset = false;
+
+      c = ss.get();
+      if (c != '.' && c != 'p') isValid = false;
+      if (c == 'p') input.pause = true;
+      if (c == '.') input.pause = false;
+
+      return true;
     }
 
-    // Reset trigger
-    c = ss.get();
-    if (c != '.' && c != 'r') isValid = false;
-    if (c == 'r') reset = true;
-    if (c == '.') reset = false;
+    // If its genesis, parse power and reset buttons
+    if (type == system_t::genesis)
+    {
+      c = ss.get();
+      if (c != '.' && c != 'P') isValid = false;
+      if (c == 'P') input.power = true;
+      if (c == '.') input.power = false;
 
+      c = ss.get();
+      if (c != '.' && c != 'r') isValid = false;
+      if (c == 'r') input.reset = true;
+      if (c == '.') input.reset = false;
+    }
+
+    // If its segacd, parse power, reset, and disc selection buttons
+    if (type == system_t::segacd)
+    {
+      c = ss.get();
+      if (c != '.' && c != 'P') isValid = false;
+      if (c == 'P') input.power = true;
+      if (c == '.') input.power = false;
+
+      c = ss.get();
+      if (c != '.' && c != 'r') isValid = false;
+      if (c == 'r') input.reset = true;
+      if (c == '.') input.reset = false;
+
+            c = ss.get();
+      if (c != '.' && c != '<') isValid = false;
+      if (c == '<') input.previousDisc = true;
+      if (c == '.') input.previousDisc = false;
+
+      c = ss.get();
+      if (c != '.' && c != '>') isValid = false;
+      if (c == '>') input.nextDisc = true;
+      if (c == '.') input.nextDisc = false;
+    }
+    
     // Return valid flag
     return isValid;
   }
 
   input_t _input;
+  system_t _systemType;
   controller_t _controller1Type;
   controller_t _controller2Type;
 };

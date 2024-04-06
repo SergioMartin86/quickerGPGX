@@ -18,6 +18,7 @@ protectedTestSet = [
 openSourceTestSet = [
   'dinoRunner.playaround',
   'drunkasilike.playaround',
+  'maiNurse.playaround',
 ]
 
 # Creating test set based on whether copyrighted roms are to be used

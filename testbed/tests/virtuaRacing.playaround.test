@@ -3,6 +3,7 @@
   "Expected ROM SHA1": "FF969AE53120CC4E7CB1A8A7E47458F2EB8A2165",
   "Initial State File": "",
   "Disable State Blocks": [ ],
+  "System Type": "Sega Genesis",
   "Controller 1 Type": "Gamepad3B",
   "Controller 2 Type": "None",
   "Differential Compression":

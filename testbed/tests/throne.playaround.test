@@ -1,9 +1,9 @@
 {
-  "Rom File": "roms/Segapede (Prototype).md",
-  "Expected ROM SHA1": "3452959175FA7631AF01E8821CB8B8410F5FBB79",
+  "Rom File": "roms/Throne.iso",
+  "Expected ROM SHA1": "EAAB21A4095FE2FD2E3817B448D207BA8BAC02A5",
   "Initial State File": "",
   "Disable State Blocks": [ ],
-  "System Type": "Sega Genesis",
+  "System Type": "Sega CD",
   "Controller 1 Type": "Gamepad3B",
   "Controller 2 Type": "None",
   "Differential Compression":

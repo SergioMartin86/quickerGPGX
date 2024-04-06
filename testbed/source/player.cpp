@@ -68,6 +68,9 @@ int main(int argc, char *argv[])
   std::string stateDisabledBlocksOutput;
   for (const auto& entry : stateDisabledBlocks) stateDisabledBlocksOutput += entry + std::string(" ");
   
+  // Getting System Type
+  const auto systemType = jaffarCommon::json::getString(configJs, "System Type");
+
   // Getting Controller 1 type
   const auto controller1Type = jaffarCommon::json::getString(configJs, "Controller 1 Type");
 
@@ -108,6 +111,9 @@ int main(int argc, char *argv[])
 
   // Initializing video output
   if (disableRender == false) e.initializeVideoOutput();
+
+  // Setting system type
+  e.setSystemType(systemType);
 
   // Setting controller types
   e.setController1Type(controller1Type);

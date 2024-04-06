@@ -3,6 +3,7 @@
   "Expected ROM SHA1": "A7304E95B50B0713A729213D2473C39E082629A1",
   "Initial State File": "",
   "Disable State Blocks": [ ],
+  "System Type": "Sega CD",
   "Controller 1 Type": "Gamepad3B",
   "Controller 2 Type": "None",
   "Differential Compression":

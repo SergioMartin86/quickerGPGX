@@ -1,10 +1,10 @@
 {
-  "Rom File": "roms/Segapede (Prototype).md",
-  "Expected ROM SHA1": "3452959175FA7631AF01E8821CB8B8410F5FBB79",
+  "Rom File": "roms/mai_nurse_v1.00.sms",
+  "Expected ROM SHA1": "770A8B571AF0B8C16C1BDE88311B14984AA7F38E",
   "Initial State File": "",
   "Disable State Blocks": [ ],
-  "System Type": "Sega Genesis",
-  "Controller 1 Type": "Gamepad3B",
+  "System Type": "Sega Master System",
+  "Controller 1 Type": "Gamepad2B",
   "Controller 2 Type": "None",
   "Differential Compression":
   {
