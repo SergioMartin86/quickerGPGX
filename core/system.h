@@ -42,7 +42,7 @@
 #ifndef _SYSTEM_H_
 #define _SYSTEM_H_
 
-#include "sound/blip_buf.h"
+#include "blip_buf.h"
 
 /* Supported hardware models */
 #define SYSTEM_SG           0x01

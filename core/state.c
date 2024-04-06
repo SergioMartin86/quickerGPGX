@@ -37,7 +37,6 @@
  ****************************************************************************************/
 
 #include "shared.h"
-#include "input_hw/gamepad.h"
 
 int state_load(unsigned char *state)
 {
@@ -47,7 +46,7 @@ int state_load(unsigned char *state)
   char version[17];
   load_param(version,16);
   version[16] = 0;
-  if (memcmp(version,STATE_VERSION,11)) /* TO-DO: Update*/
+  if (memcmp(version,STATE_VERSION,11))
   {
     return 0;
   }
@@ -159,7 +158,7 @@ int state_load(unsigned char *state)
     load_param(&m68k.cycles, sizeof(m68k.cycles));
     load_param(&m68k.int_level, sizeof(m68k.int_level));
     load_param(&m68k.stopped, sizeof(m68k.stopped));
-    load_param(&m68k.refresh_cycles, sizeof(m68k.refresh_cycles)); 
+    load_param(&m68k.refresh_cycles, sizeof(m68k.refresh_cycles));
   }
 
   /* Z80 */ 
@@ -226,10 +225,10 @@ int state_save(unsigned char *state)
 
   /* IO */
   save_param(io_reg, sizeof(io_reg));
-
+  
   /* CONTROLLERS */
   save_param(gamepad, sizeof(gamepad));
-
+  
   /* VDP */
   bufferptr += vdp_context_save(&state[bufferptr]);
 
@@ -265,7 +264,7 @@ int state_save(unsigned char *state)
     save_param(&m68k.cycles, sizeof(m68k.cycles));
     save_param(&m68k.int_level, sizeof(m68k.int_level));
     save_param(&m68k.stopped, sizeof(m68k.stopped));
-    save_param(&m68k.refresh_cycles    , sizeof(m68k.refresh_cycles  )); 
+    save_param(&m68k.refresh_cycles, sizeof(m68k.refresh_cycles));
   }
 
   /* Z80 */ 

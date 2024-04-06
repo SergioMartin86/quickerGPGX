@@ -8,8 +8,6 @@
  * Config Option 
  *
  ****************************************************************************/
-#define MAX_INPUTS 8
-
 typedef struct 
 {
   uint8 padtype;

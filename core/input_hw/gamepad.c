@@ -41,9 +41,14 @@
 #include "gamepad.h"
 
 struct gamepad_t gamepad[MAX_DEVICES];
-struct flipflop_t flipflop[2];
-uint8 latch;
 
+static struct
+{
+  uint8 Latch;
+  uint8 Counter;
+} flipflop[2];
+
+static uint8 latch;
 
 void gamepad_reset(int port)
 {

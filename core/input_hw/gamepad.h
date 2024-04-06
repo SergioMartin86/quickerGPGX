@@ -40,8 +40,6 @@
 #ifndef _GAMEPAD_H_
 #define _GAMEPAD_H_
 
-#include "../types.h"
-
 struct gamepad_t
 {
   uint8 State;
@@ -50,15 +48,7 @@ struct gamepad_t
   uint32 Latency;
 };
 
-struct flipflop_t
-{
-  uint8 Latch;
-  uint8 Counter;
-};
-
 extern struct gamepad_t gamepad[MAX_DEVICES];
-extern struct flipflop_t flipflop[2];
-extern uint8 latch;
 
 /* Function prototypes */
 extern void gamepad_reset(int port);

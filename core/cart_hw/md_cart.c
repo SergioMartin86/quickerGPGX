@@ -891,6 +891,29 @@ int md_cart_context_save(uint8 *state)
   int bufferptr = 0;
   uint8 *base;
 
+  /* cartridge mapping */
+  for (i=0; i<0x40; i++)
+  {
+    /* get base address */
+    base = m68k.memory_map[i].base;
+
+    if (base == sram.sram)
+    {
+      /* SRAM */
+      state[bufferptr++] = 0xff;
+    }
+    else if (base == boot_rom)
+    {
+      /* Boot ROM */
+      state[bufferptr++] = 0xfe;
+    }
+    else
+    {
+      /* Cartridge ROM */
+      state[bufferptr++] = ((base - cart.rom) >> 16) & 0xff;
+    }
+  }
+
   /* hardware registers */
   save_param(cart.hw.regs, sizeof(cart.hw.regs));
 
@@ -916,6 +939,42 @@ int md_cart_context_load(uint8 *state)
   int i;
   int bufferptr = 0;
   uint8 offset;
+
+  /* cartridge mapping */
+  for (i=0; i<0x40; i++)
+  {
+    /* get offset */
+    offset = state[bufferptr++];
+
+    if (offset == 0xff)
+    {
+      /* SRAM */
+      m68k.memory_map[i].base     = sram.sram;
+      m68k.memory_map[i].read8    = sram_read_byte;
+      m68k.memory_map[i].read16   = sram_read_word;
+      m68k.memory_map[i].write8   = sram_write_byte;
+      m68k.memory_map[i].write16  = sram_write_word;
+      zbank_memory_map[i].read    = sram_read_byte;
+      zbank_memory_map[i].write   = sram_write_byte;
+
+    }
+    else
+    {
+      /* check if SRAM was mapped there before loading state */
+      if (m68k.memory_map[i].base == sram.sram)
+      {
+        m68k.memory_map[i].read8    = NULL;
+        m68k.memory_map[i].read16   = NULL;
+        m68k.memory_map[i].write8   = m68k_unused_8_w;
+        m68k.memory_map[i].write16  = m68k_unused_16_w;
+        zbank_memory_map[i].read    = NULL;
+        zbank_memory_map[i].write   = zbank_unused_w;
+      }
+
+      /* ROM */
+      m68k.memory_map[i].base = (offset == 0xfe) ? boot_rom : (cart.rom + (offset << 16));
+    }
+  }
 
   /* hardware registers */
   load_param(cart.hw.regs, sizeof(cart.hw.regs));
@@ -1035,8 +1094,7 @@ static void mapper_512k_w(uint32 address, uint32 data)
   /* remap selected ROM page to selected bank */
   for (i=0; i<8; i++)
   {
-    m68k.memory_map[address].base = src + (i<<16);
-    address++;
+    m68k.memory_map[address++].base = src + (i<<16);
   }
 }
 
@@ -1662,12 +1720,11 @@ static void mapper_realtec_w(uint32 address, uint32 data)
 static uint32 mapper_realtec_r(uint32 address)
 {
   /* /VRES is asserted to bypass TMSS licensing screen when first read access to cartridge ROM header is detected */
-  if (address == 0x100)
+  if ((address == 0x100) && (m68k.memory_map[0].base = cart.base))
   {
-    m68k.memory_map[0].base = cart.base;
-    if (m68k.memory_map[0].base > 0) 
-      m68k_pulse_reset(); /* asserting /VRES from cartridge should only reset 68k CPU (TODO: confirm this on real hardware) */
-  } 
+    /* asserting /VRES from cartridge should only reset 68k CPU (TODO: confirm this on real hardware) */
+    m68k_pulse_reset();
+  }
 
   /* default ROM area read handler */
   return *(uint16 *)(m68k.memory_map[0].base + (address & 0xfffe));

@@ -213,6 +213,7 @@ typedef enum
   M68K_REG_IR    /* Instruction register */
 } m68k_register_t;
 
+
 /* 68k memory map structure */
 typedef struct 
 {

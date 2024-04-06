@@ -44,8 +44,6 @@
 #ifndef _MD_CART_H_
 #define _MD_CART_H_
 
-#include "../m68k/m68k.h"
-
 #ifdef USE_DYNAMIC_ALLOC
 #define cart ext->md_cart
 #else
@@ -85,13 +83,13 @@ typedef struct
 /* Cartridge type */
 typedef struct
 {
-  uint8 *base;                   /* ROM base (saved for OS/Cartridge ROM swap) */
-  uint32 romsize;                /* ROM size */
-  uint32 mask;                   /* ROM mask */
-  uint8 special;                 /* custom external hardware (Lock-On, J-Cart, 3-D glasses, Terebi Oekaki,...) */
-  cart_hw_t hw;                  /* cartridge internal hardware */
-  uint8 lockrom[0x10000];        /* Game Genie / (Pro) Action Replay Lock-On ROM area (max 64KB) */
-  uint8 rom[MAXROMSIZE];         /* cartridge ROM area */
+  uint8 *base;            /* ROM base (saved for OS/Cartridge ROM swap) */
+  uint32 romsize;         /* ROM size */
+  uint32 mask;            /* ROM mask */
+  uint8 special;          /* custom external hardware (Lock-On, J-Cart, 3-D glasses, Terebi Oekaki,...) */
+  cart_hw_t hw;           /* cartridge internal hardware */
+  uint8 lockrom[0x10000]; /* Game Genie / (Pro) Action Replay Lock-On ROM area (max 64KB) */
+  uint8 rom[MAXROMSIZE];  /* cartridge ROM area */
 } md_cart_t;
 
 /* Function prototypes */
