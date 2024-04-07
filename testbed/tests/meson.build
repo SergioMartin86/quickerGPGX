@@ -16,15 +16,15 @@ protectedTestSet = [
 ]
 
 # Tests for open source free roms (for public cloud testing)
-openSourceTestSet = [
+freeTestSet = [
   'dinoRunner.playaround',
   'drunkasilike.playaround',
   'maiNurse.playaround',
 ]
 
 # Creating test set based on whether copyrighted roms are to be used
-testSet = openSourceTestSet
-if get_option('onlyOpenSource') == false
+testSet = freeTestSet
+if get_option('DonlyFreeLicenseRoms') == false
  testSet += protectedTestSet
 endif
 

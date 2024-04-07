@@ -1,12 +1,6 @@
-project('gpgxCompare','c','cpp',
-  version: '1.0.0',
-  license: 'GPL-3.0-only',
-  default_options : ['cpp_std=c++20', 'default_library=shared', 'buildtype=release'],
-  subproject_dir : 'extern'
-)
-
-# Loading dependencies
-subdir('source')
+# Loading upstream (base) and new cores
+subdir('base')
+subdir('new')
 
 # Do not build any targets if this is a subproject
 if meson.is_subproject() == false
@@ -22,7 +16,7 @@ jaffarCommonDependency = jaffarCommonSubproject.get_variable('jaffarCommonDepend
 # Building tester tool for QuickerSnes9x
 
 newGPGXTester = executable('newGPGXTester',
-  'source/tester.cpp',
+  'tester.cpp',
   cpp_args            : [ commonCompileArgs ], 
   dependencies        : [ newGPGXDependency, jaffarCommonDependency ],
 )
@@ -30,7 +24,7 @@ newGPGXTester = executable('newGPGXTester',
 # Building tester tool for the original snes9x
 
 baseGPGXTester = executable('baseGPGXTester',
-  'source/tester.cpp',
+  'tester.cpp',
   cpp_args            : [ commonCompileArgs ],
   dependencies        : [ baseGPGXDependency, jaffarCommonDependency ],
 )

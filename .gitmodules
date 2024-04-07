@@ -1,6 +1,6 @@
-[submodule "testbed/extern/jaffarCommon"]
+[submodule "testbed/source/base/core"]
+	path = testbed/base/core
+	url = https://github.com/ekeeke/Genesis-Plus-GX.git
+[submodule "extern/jaffarCommon"]
 	path = testbed/extern/jaffarCommon
 	url = https://github.com/SergioMartin86/jaffarCommon.git
-[submodule "testbed/source/base/core"]
-	path = testbed/source/base/core
-	url = https://github.com/ekeeke/Genesis-Plus-GX.git

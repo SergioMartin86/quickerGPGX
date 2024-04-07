@@ -1,35 +1,31 @@
-Genesis Plus GX is an open-source Sega 8/16 bit emulator focused on accuracy and portability. Initially ported and developped on Gamecube / Wii consoles through [libogc / devkitPPC](http://sourceforge.net/projects/devkitpro/), this emulator is now available on many other platforms through various frontends such as:
+Bizhawk GPGX Core
+------------------
 
-* [Retroarch (libretro)](http://www.libretro.com)
+[![Build and Run Tests](https://github.com/TASEmulators/Genesis-Plus-GX/actions/workflows/make.yml/badge.svg)](https://github.com/TASEmulators/Genesis-Plus-GX/actions/workflows/make.yml)
 
-* [Bizhawk](http://tasvideos.org/Bizhawk.html)
+This is a candidate replacement repository for the Bizhawk GPGX port. The goals are:
 
-* [OpenEmu](http://openemu.org/)
+- Update the Bizhawk GPGX core with the advancements in the upstream GPGX development
+- Preserve the current features added by the Bizhawk GPGX core while adding a few more (e.g., additional sound chip support)
+- Create a testbed to make sure none of the changes causes desyncs with respect to the upstream GPGX code
 
-----
+Building and Running Testbed
+-----------------------------
 
-The source code, initially based on Genesis Plus 1.2a by [Charles MacDonald](http://www.techno-junk.org/ ) has been heavily modified & enhanced, with respect to original goals and design, in order to improve emulation accuracy as well as adding support for new peripherals, cartridge or console hardware and many other exciting [features](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/wiki/Features.md).
+[Optional] Step 0: populate testbed/tests/roms with the commercial roms and BIOS files that cannot be uploaded to github
 
-The result is that Genesis Plus GX is now more a continuation of the original project than a simple port, providing very accurate emulation and [100% compatibility](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/wiki/Compatibility.md) with Genesis / Mega Drive, Sega/Mega CD, Master System, Game Gear & SG-1000 released software (including all unlicensed or pirate known dumps), also emulating backwards compatibility modes when available. All the people who contributed (directly or indirectly) to this project are listed on the [Credits](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/wiki/Credits.md) page.
+mkdir build
+cd build
+meson .. -DonlyOpenSource=true # (false, if you have done step 0)
+ninja
+meson test
 
-----
+Credits
+---------
 
-Multi-platform sourcecode (core), which is made available for use under a specific non-commercial [license](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/LICENSE.txt), is maintained on [Bitbucket](https://bitbucket.org/eke/genesis-plus-gx/src/) / [Github](https://github.com/ekeeke/Genesis-Plus-GX) so that other Genesis Plus ports can benefit of it, as I really wish this emulator becomes a reference for _portable_ and _accurate_ Sega 8/16-bit emulation. If you ported this emulator to other platforms or need help porting it, feel free to contact me.
+- The changes to the GPGX core are adapted from the current (or rather former) [Bizhawk GPGX core](https://github.com/TASEmulators/BizHawk/tree/572d989a94603f4e5145a36042402d045e29dcf8/waterbox/gpgx/core) 
+- This repository core and the testbed are maintained by eien86
+- The upstream GPGX core is developed by ekeeke and others under open source free licenses. For more information see: https://github.com/ekeeke/Genesis-Plus-GX
 
-----
+All base code for this project was found under open source licenses, which we preserved in their corresponding files/folders. Any non-credited work is unintentional and shall be immediately rectfied.
 
-Latest official Gamecube / Wii standalone port (screenshots below) is available [here](https://github.com/ekeeke/Genesis-Plus-GX/tree/master/builds). Be sure to check the included [user manual](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/gx/docs/README.pdf) first. A [startup guide](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/wiki/Getting%20Started.md) and a [FAQ](https://github.com/ekeeke/Genesis-Plus-GX/blob/master/wiki/Frequently%20Asked%20Questions.md) are also available.
-
-![MainMenu.png](https://bitbucket.org/repo/7AjE6M/images/3565283297-MainMenu.png)
-![menu_load.png](https://bitbucket.org/repo/7AjE6M/images/164055790-menu_load.png)
-
-![RomBrowser.png](https://bitbucket.org/repo/7AjE6M/images/1972035547-RomBrowser.png)
-![CtrlMenu.png](https://bitbucket.org/repo/7AjE6M/images/2283464354-CtrlMenu.png)
-
-----
-
-You can also test latest compiled builds for Gamecube / Wii and Retroarch (Windows 32-bit version only) by downloading them from [here](https://github.com/ekeeke/Genesis-Plus-GX/tree/master/builds).
-
-----
-
-[![btn_donate_LG.gif](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2966212) If you like this project and want to show your appreciation, Paypal donations are always welcomed.
