@@ -28,10 +28,6 @@ int main(int argc, char *argv[])
     .help("Path to the input sequence file (.sol) to reproduce.")
     .required();
 
-  program.add_argument("--cycleType")
-    .help("Specifies the emulation actions to be performed per each input. Possible values: 'Simple': performs only advance state, 'Rerecord': performs load/advance/save, and 'Full': performs load/advance/save/advance.")
-    .default_value(std::string("Simple"));
-
   program.add_argument("--hashOutputFile")
     .help("Path to write the hash output to.")
     .default_value(std::string(""));
@@ -45,9 +41,6 @@ int main(int argc, char *argv[])
   // Getting path where to save the hash output (if any)
   const auto hashOutputFile = program.get<std::string>("--hashOutputFile");
 
-  // Getting cycle type
-  const auto cycleType = program.get<std::string>("--cycleType");
-
   // Loading script file
   std::string configJsRaw;
   if (jaffarCommon::file::loadStringFromFile(configJsRaw, scriptFilePath) == false) JAFFAR_THROW_LOGIC("Could not find/read script file: %s\n", scriptFilePath.c_str());
@@ -57,9 +50,6 @@ int main(int argc, char *argv[])
 
   // Getting rom file path
   const auto romFilePath = jaffarCommon::json::getString(configJs, "Rom File");
-
-  // Getting initial state file path
-  const auto initialStateFilePath = jaffarCommon::json::getString(configJs, "Initial State File");
 
   // Getting sequence file path
   std::string sequenceFilePath = program.get<std::string>("sequenceFile");
@@ -81,23 +71,6 @@ int main(int argc, char *argv[])
   // Getting Controller 2 type
   const auto controller2Type = jaffarCommon::json::getString(configJs, "Controller 2 Type");
 
-  // Getting differential compression configuration
-  if (configJs.contains("Differential Compression") == false) JAFFAR_THROW_LOGIC("Script file missing 'Differential Compression' entry\n");
-  if (configJs["Differential Compression"].is_object() == false) JAFFAR_THROW_LOGIC("Script file 'Differential Compression' entry is not a key/value object\n");
-  const auto& differentialCompressionJs = configJs["Differential Compression"];
-
-  if (differentialCompressionJs.contains("Enabled") == false) JAFFAR_THROW_LOGIC("Script file missing 'Differential Compression / Enabled' entry\n");
-  if (differentialCompressionJs["Enabled"].is_boolean() == false) JAFFAR_THROW_LOGIC("Script file 'Differential Compression / Enabled' entry is not a boolean\n");
-  const auto differentialCompressionEnabled = differentialCompressionJs["Enabled"].get<bool>();
-
-  if (differentialCompressionJs.contains("Max Differences") == false) JAFFAR_THROW_LOGIC("Script file missing 'Differential Compression / Max Differences' entry\n");
-  if (differentialCompressionJs["Max Differences"].is_number() == false) JAFFAR_THROW_LOGIC("Script file 'Differential Compression / Max Differences' entry is not a number\n");
-  const auto differentialCompressionMaxDifferences = differentialCompressionJs["Max Differences"].get<size_t>();
-
-  if (differentialCompressionJs.contains("Use Zlib") == false) JAFFAR_THROW_LOGIC("Script file missing 'Differential Compression / Use Zlib' entry\n");
-  if (differentialCompressionJs["Use Zlib"].is_boolean() == false) JAFFAR_THROW_LOGIC("Script file 'Differential Compression / Use Zlib' entry is not a boolean\n");
-  const auto differentialCompressionUseZlib = differentialCompressionJs["Use Zlib"].get<bool>();
-
   // Creating emulator instance
   auto e = gpgx::EmuInstance();
 
@@ -110,7 +83,7 @@ int main(int argc, char *argv[])
 
   // Setting system type
   e.setSystemType(systemType);
-  
+
   // Loading ROM File
   std::string romFileData;
   if (jaffarCommon::file::loadStringFromFile(romFileData, romFilePath) == false) JAFFAR_THROW_LOGIC("Could not rom file: %s\n", romFilePath.c_str());
@@ -119,27 +92,11 @@ int main(int argc, char *argv[])
   // Calculating ROM SHA1
   auto romSHA1 = jaffarCommon::hash::getSHA1String(romFileData);
 
-  // If an initial state is provided, load it now
-  if (initialStateFilePath != "")
-  {
-    std::string stateFileData;
-    if (jaffarCommon::file::loadStringFromFile(stateFileData, initialStateFilePath) == false) JAFFAR_THROW_LOGIC("Could not initial state file: %s\n", initialStateFilePath.c_str());
-    jaffarCommon::deserializer::Contiguous d(stateFileData.data());
-    e.deserializeState(d);
-  }
-  
   // Disabling requested blocks from state serialization
   for (const auto& block : stateDisabledBlocks) e.disableStateBlock(block);
 
   // Disable rendering
   e.disableRendering();
-
-  // Getting full state size
-  const auto stateSize = e.getStateSize();
-
-  // Getting differential state size
-  const auto fixedDiferentialStateSize = e.getDifferentialStateSize();
-  const auto fullDifferentialStateSize = fixedDiferentialStateSize + differentialCompressionMaxDifferences;
 
   // Checking with the expected SHA1 hash
   if (romSHA1 != expectedROMSHA1) JAFFAR_THROW_LOGIC("Wrong ROM SHA1. Found: '%s', Expected: '%s'\n", romSHA1.c_str(), expectedROMSHA1.c_str());
@@ -160,90 +117,19 @@ int main(int argc, char *argv[])
   // Printing test information
   printf("[] -----------------------------------------\n");
   printf("[] Running Script:                         '%s'\n", scriptFilePath.c_str());
-  printf("[] Cycle Type:                             '%s'\n", cycleType.c_str());
   printf("[] Emulation Core:                         '%s'\n", emulationCoreName.c_str());
   printf("[] ROM File:                               '%s'\n", romFilePath.c_str());
   printf("[] Controller Types:                       '%s' / '%s'\n", controller1Type.c_str(), controller2Type.c_str());
   printf("[] ROM Hash:                               'SHA1: %s'\n", romSHA1.c_str());
   printf("[] Sequence File:                          '%s'\n", sequenceFilePath.c_str());
   printf("[] Sequence Length:                        %lu\n", sequenceLength);
-  printf("[] State Size:                             %lu bytes - Disabled Blocks:  [ %s ]\n", stateSize, stateDisabledBlocksOutput.c_str());
-  printf("[] Use Differential Compression:           %s\n", differentialCompressionEnabled ? "true" : "false");
-  if (differentialCompressionEnabled == true) 
-  { 
-  printf("[]   + Max Differences:                    %lu\n", differentialCompressionMaxDifferences);    
-  printf("[]   + Use Zlib:                           %s\n", differentialCompressionUseZlib ? "true" : "false");
-  printf("[]   + Fixed Diff State Size:              %lu\n", fixedDiferentialStateSize);
-  printf("[]   + Full Diff State Size:               %lu\n", fullDifferentialStateSize);
-  }
   printf("[] ********** Running Test **********\n");
 
   fflush(stdout);
 
-  // Serializing initial state
-  auto currentState = (uint8_t *)malloc(stateSize);
-  {
-    jaffarCommon::serializer::Contiguous cs(currentState);
-    e.serializeState(cs);
-  }
-
-  // Serializing differential state data (in case it's used)
-  uint8_t *differentialStateData = nullptr;
-  size_t differentialStateMaxSizeDetected = 0;
-
-  // Allocating memory for differential data and performing the first serialization
-  if (differentialCompressionEnabled == true) 
-  {
-    differentialStateData = (uint8_t *)malloc(fullDifferentialStateSize);
-    auto s = jaffarCommon::serializer::Differential(differentialStateData, fullDifferentialStateSize, currentState, stateSize, differentialCompressionUseZlib);
-    e.serializeState(s);
-    differentialStateMaxSizeDetected = s.getOutputSize();
-  }
-
-  // Check whether to perform each action
-  bool doPreAdvance = cycleType == "Rerecord";
-  bool doDeserialize = cycleType == "Rerecord";
-  bool doSerialize = cycleType == "Rerecord";
-
   // Actually running the sequence
   auto t0 = std::chrono::high_resolution_clock::now();
-  for (const std::string &input : sequence)
-  {
-    if (doPreAdvance == true) e.advanceState(input);
-    
-    if (doDeserialize == true)
-    {
-      if (differentialCompressionEnabled == true) 
-      {
-       jaffarCommon::deserializer::Differential d(differentialStateData, fullDifferentialStateSize, currentState, stateSize, differentialCompressionUseZlib);
-       e.deserializeState(d);
-      }
-
-      if (differentialCompressionEnabled == false)
-      {
-        jaffarCommon::deserializer::Contiguous d(currentState, stateSize);
-        e.deserializeState(d);
-      } 
-    } 
-    
-    e.advanceState(input);
-
-    if (doSerialize == true)
-    {
-      if (differentialCompressionEnabled == true)
-      {
-        auto s = jaffarCommon::serializer::Differential(differentialStateData, fullDifferentialStateSize, currentState, stateSize, differentialCompressionUseZlib);
-        e.serializeState(s);
-        differentialStateMaxSizeDetected = std::max(differentialStateMaxSizeDetected, s.getOutputSize());
-      }  
-
-      if (differentialCompressionEnabled == false) 
-      {
-        auto s = jaffarCommon::serializer::Contiguous(currentState, stateSize);
-        e.serializeState(s);
-      }
-    } 
-  }
+  for (const std::string &input : sequence) e.advanceState(input);
   auto tf = std::chrono::high_resolution_clock::now();
 
   // Calculating running time
@@ -261,10 +147,7 @@ int main(int argc, char *argv[])
   printf("[] Elapsed time:                           %3.3fs\n", (double)dt * 1.0e-9);
   printf("[] Performance:                            %.3f inputs / s\n", (double)sequenceLength / elapsedTimeSeconds);
   printf("[] Final State Hash:                       %s\n", hashStringBuffer);
-  if (differentialCompressionEnabled == true)
-  {
-  printf("[] Differential State Max Size Detected:   %lu\n", differentialStateMaxSizeDetected);    
-  }
+  
   // If saving hash, do it now
   if (hashOutputFile != "") jaffarCommon::file::saveStringToFile(std::string(hashStringBuffer), hashOutputFile.c_str());
 

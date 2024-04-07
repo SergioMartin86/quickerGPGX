@@ -19,32 +19,6 @@ commonCompileArgs = [ '-Wall', '-Wfatal-errors' ]
 jaffarCommonSubproject = subproject('jaffarCommon')
 jaffarCommonDependency = jaffarCommonSubproject.get_variable('jaffarCommonDependency')
 
-# Building playback tool
-
-if get_option('buildPlayer') == true
-
-  newGPGXPlayer = executable('newGPGXPlayer',
-    'source/player.cpp',
-    cpp_args            : [ commonCompileArgs, '-DNCURSES' ],
-    dependencies        : [ newGPGXDependency,
-                            jaffarCommonDependency
-                          ],
-    include_directories : include_directories(['source']),
-    link_args           : [ '-lncurses' ],
-  )
-
-  baseGPGXPlayer = executable('baseGPGXPlayer',
-    'source/player.cpp',
-    cpp_args            : [ commonCompileArgs, '-DNCURSES' ],
-    dependencies        : [ baseGPGXDependency,
-                            jaffarCommonDependency,
-                          ],
-    include_directories : include_directories(['source']),
-    link_args           : [ '-lncurses' ],
-  )
-
-endif
-
 # Building tester tool for QuickerSnes9x
 
 newGPGXTester = executable('newGPGXTester',

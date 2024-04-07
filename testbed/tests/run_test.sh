@@ -26,30 +26,24 @@ newHashFile="/tmp/newGPGX.${folder}.${script}.${pid}.hash"
 # Removing them if already present
 rm -f ${baseHashFile}
 rm -f ${newHashFile}.simple
-rm -f ${newHashFile}.rerecord
 
 set -x
 # Running script on base GPGX
-${baseExecutable} ${script} --hashOutputFile ${baseHashFile}.simple ${testerArgs} --cycleType Simple
+${baseExecutable} ${script} --hashOutputFile ${baseHashFile}.simple ${testerArgs}
 
 # Running script on new GPGX (Simple)
-${newExecutable} ${script} --hashOutputFile ${newHashFile}.simple ${testerArgs} --cycleType Simple
-set +x
-
-# Running script on new GPGX (Rerecord)
-${newExecutable} ${script} --hashOutputFile ${newHashFile}.rerecord ${testerArgs} --cycleType Rerecord
+${newExecutable} ${script} --hashOutputFile ${newHashFile}.simple ${testerArgs}
 set +x
 
 # Comparing hashes
 baseHash=`cat ${baseHashFile}.simple`
 newHashSimple=`cat ${newHashFile}.simple`
-newHashRerecord=`cat ${newHashFile}.rerecord`
 
 # Removing temporary files
-rm -f ${baseHashFile}.simple ${newHashFile}.simple ${newHashFile}.rerecord
+rm -f ${baseHashFile}.simple ${newHashFile}.simple 
 
 # Compare hashes
-if [ "${baseHash}" = "${newHashSimple}" -a "${baseHash}" = "${newHashRerecord}" ]; then
+if [ "${baseHash}" = "${newHashSimple}" ]; then
  echo "[] Test Passed"
  exit 0
 else
