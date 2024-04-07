@@ -2,10 +2,8 @@
 
 newGPGXSrc =  [
    'main.c',
-   '../../sdl/config.c',
-   '../../sdl/error.c',
-   '../../sdl/fileio.c',
-   '../../sdl/unzip.c',
+   'fileio.c',
+   'unzip.c',
    '../../core/sound/sound.c',
    '../../core/sound/ym3438.c',
    '../../core/sound/opll.c',
@@ -70,8 +68,6 @@ newGPGXIncludeDirs = [
   '../../core/ntsc',
   '../../core/sound',
   '../../core/z80',
-  '../../sdl',
-  '../../sdl/sdl2',
 ]
 
 newGPGXCompileArgs = [

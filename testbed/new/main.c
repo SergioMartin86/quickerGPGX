@@ -1,15 +1,32 @@
 #include "SDL.h"
 #include "SDL_thread.h"
 
-#include "shared.h"
-#include "sms_ntsc.h"
-#include "md_ntsc.h"
+#include <state.h>
+#include <shared.h>
+#include <osd.h>
+#include <ntsc/sms_ntsc.h>
+#include <ntsc/md_ntsc.h>
 
 #define SOUND_FREQUENCY 48000
 #define SOUND_SAMPLES_SIZE  2048
 
 #define VIDEO_WIDTH  320
 #define VIDEO_HEIGHT 240
+
+char GG_ROM[256];
+char AR_ROM[256];
+char SK_ROM[256];
+char SK_UPMEM[256];
+char GG_BIOS[256];
+char CD_BIOS_EU[256];
+char CD_BIOS_US[256];
+char CD_BIOS_JP[256];
+char MD_BIOS[256];
+char MS_BIOS_US[256];
+char MS_BIOS_EU[256];
+char MS_BIOS_JP[256];
+
+struct config_t config;
 
 int joynum = 0;
 
@@ -47,6 +64,69 @@ struct {
 
 
  short soundframe[SOUND_SAMPLES_SIZE];
+
+void osd_input_update(void)
+{
+  sdl_input_update();
+}
+
+void set_config_defaults(void)
+{
+  int i;
+
+  /* sound options */
+  config.psg_preamp     = 150;
+  config.fm_preamp      = 100;
+  config.cdda_volume    = 100;
+  config.pcm_volume     = 100;
+  config.hq_fm          = 1;
+  config.hq_psg         = 1;
+  config.filter         = 1;
+  config.low_freq       = 200;
+  config.high_freq      = 8000;
+  config.lg             = 100;
+  config.mg             = 100;
+  config.hg             = 100;
+  config.lp_range       = 0x9999; /* 0.6 in 0.16 fixed point */
+  config.ym2612         = 0;
+  config.ym2413         = 2; /* = AUTO (0 = always OFF, 1 = always ON) */
+  config.ym3438         = 0;
+  config.opll           = 0;
+  config.mono           = 0;
+
+  /* system options */
+  config.system         = 0; /* = AUTO (or SYSTEM_SG, SYSTEM_SGII, SYSTEM_SGII_RAM_EXT, SYSTEM_MARKIII, SYSTEM_SMS, SYSTEM_SMS2, SYSTEM_GG, SYSTEM_MD) */
+  config.region_detect  = 0; /* = AUTO (1 = USA, 2 = EUROPE, 3 = JAPAN/NTSC, 4 = JAPAN/PAL) */
+  config.vdp_mode       = 0; /* = AUTO (1 = NTSC, 2 = PAL) */
+  config.master_clock   = 0; /* = AUTO (1 = NTSC, 2 = PAL) */
+  config.force_dtack    = 0;
+  config.addr_error     = 1;
+  config.bios           = 0;
+  config.lock_on        = 0; /* = OFF (or TYPE_SK, TYPE_GG & TYPE_AR) */
+  config.add_on         = 0; /* = HW_ADDON_AUTO (or HW_ADDON_MEGACD, HW_ADDON_MEGASD & HW_ADDON_ONE) */
+  config.cd_latency     = 1;
+
+  /* display options */
+  config.overscan = 0;  /* 3 = all borders (0 = no borders , 1 = vertical borders only, 2 = horizontal borders only) */
+  config.gg_extra = 0;  /* 1 = show extended Game Gear screen (256x192) */
+  config.render   = 0;  /* 1 = double resolution output (only when interlaced mode 2 is enabled) */
+  config.ntsc     = 0;
+  config.lcd      = 0;  /* 0.8 fixed point */
+  config.enhanced_vscroll = 0;
+  config.enhanced_vscroll_limit = 8;
+
+  /* controllers options */
+  input.system[0]       = SYSTEM_GAMEPAD;
+  input.system[1]       = SYSTEM_GAMEPAD;
+  config.gun_cursor[0]  = 1;
+  config.gun_cursor[1]  = 1;
+  config.invert_mouse   = 0;
+  for (i=0;i<MAX_INPUTS;i++)
+  {
+    /* autodetected control pad type */
+    config.input[i].padtype = DEVICE_PAD2B | DEVICE_PAD3B | DEVICE_PAD6B;
+  }
+}
 
  void sdl_sound_callback(void *userdata, Uint8 *stream, int len)
 {
@@ -503,8 +583,20 @@ void initialize ()
   bitmap.data = malloc(1024*1024*4);
 
   /* set default config */
-  error_init();
   set_config_defaults();
+
+  strcpy(GG_ROM    ,  "./ggenie.bin");
+  strcpy(AR_ROM    ,  "./areplay.bin");
+  strcpy(SK_ROM    ,  "./sk.bin");
+  strcpy(SK_UPMEM  ,  "./sk2chip.bin");
+  strcpy(CD_BIOS_US,  "./bios_CD_U.bin");
+  strcpy(CD_BIOS_EU,  "./bios_CD_E.bin");
+  strcpy(CD_BIOS_JP,  "./bios_CD_J.bin");
+  strcpy(MD_BIOS   ,  "./bios_MD.bin");
+  strcpy(MS_BIOS_US,  "./bios_U.sms");
+  strcpy(MS_BIOS_EU,  "./bios_E.sms");
+  strcpy(MS_BIOS_JP,  "./bios_J.sms");
+  strcpy(GG_BIOS   ,  "./bios.gg");
 
   /* mark all BIOS as unloaded */
   system_bios = 0;
@@ -710,7 +802,6 @@ int oldMain (int argc, char **argv)
   }
 
   /* set default config */
-  error_init();
   set_config_defaults();
 
   /* mark all BIOS as unloaded */
@@ -934,7 +1025,6 @@ int oldMain (int argc, char **argv)
   }
 
   audio_shutdown();
-  error_shutdown();
 
   sdl_video_close();
   sdl_sound_close();

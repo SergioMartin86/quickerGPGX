@@ -40,8 +40,10 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
 #include <zlib.h>
+#include <stdio.h>
+#include <stdint.h>
+#include "unzip.h"
 
 static int check_zip(char *filename);
 
@@ -148,7 +150,7 @@ int load_archive(char *filename, unsigned char *buffer, int maxsize, char *exten
 */
 static int check_zip(char *filename)
 {
-  uint8 buf[2];
+  uint8_t buf[2];
   FILE *fd = fopen(filename, "rb");
   if(!fd) return (0);
   fread(buf, 2, 1, fd);
