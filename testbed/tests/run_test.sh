@@ -25,25 +25,25 @@ newHashFile="/tmp/newGPGX.${folder}.${script}.${pid}.hash"
 
 # Removing them if already present
 rm -f ${baseHashFile}
-rm -f ${newHashFile}.simple
+rm -f ${newHashFile}
 
 set -x
 # Running script on base GPGX
-${baseExecutable} ${script} --hashOutputFile ${baseHashFile}.simple ${testerArgs}
+${baseExecutable} ${script} --hashOutputFile ${baseHashFile} ${testerArgs}
 
 # Running script on new GPGX (Simple)
-${newExecutable} ${script} --hashOutputFile ${newHashFile}.simple ${testerArgs}
+${newExecutable} ${script} --hashOutputFile ${newHashFile} ${testerArgs}
 set +x
 
 # Comparing hashes
-baseHash=`cat ${baseHashFile}.simple`
-newHashSimple=`cat ${newHashFile}.simple`
+baseHash=`cat ${baseHashFile}`
+newHash=`cat ${newHashFile}`
 
 # Removing temporary files
-rm -f ${baseHashFile}.simple ${newHashFile}.simple 
+rm -f ${baseHashFile} ${newHashFile} 
 
 # Compare hashes
-if [ "${baseHash}" = "${newHashSimple}" ]; then
+if [ "${baseHash}" = "${newHash}" ]; then
  echo "[] Test Passed"
  exit 0
 else
