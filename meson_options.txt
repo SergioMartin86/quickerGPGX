@@ -1,4 +1,4 @@
-option('DonlyFreeLicenseRoms',
+option('onlyFreeLicenseRoms',
   type : 'boolean',
   value : false,
   description : 'Test using only free licensed source games (for cloud CI)',
