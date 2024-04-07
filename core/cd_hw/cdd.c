@@ -38,11 +38,7 @@
 #include "shared.h"
 #include "megasd.h"
 
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-#define SUPPORTED_EXT 20
-#else
 #define SUPPORTED_EXT 10
-#endif
 
 /* CD blocks scanning speed */
 #define CD_SCAN_SPEED 30
@@ -129,18 +125,6 @@ static const uint32 toc_ffightj[29] =
 /* supported audio file extensions */
 static const char extensions[SUPPORTED_EXT][16] =
 {
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-  "%02d.ogg",
-  " %02d.ogg",
-  "-%02d.ogg",
-  "_%02d.ogg",
-  " - %02d.ogg",
-  "%d.ogg",
-  " %d.ogg",
-  "-%d.ogg",
-  "_%d.ogg",
-  " - %d.ogg",
-#endif
   "%02d.wav",
   " %02d.wav",
   "-%02d.wav",
@@ -152,39 +136,6 @@ static const char extensions[SUPPORTED_EXT][16] =
   "_%d.wav",
   " - %d.wav"
 };
-
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-
-static int seek64_wrap(void *f,ogg_int64_t off,int whence){
-  return cdStreamSeek(f,off,whence);
-}
-
-static ov_callbacks cb =
-{ 
-  (size_t (*)(void *, size_t, size_t, void *))  cdStreamRead,
-  (int (*)(void *, ogg_int64_t, int))           seek64_wrap,
-  (int (*)(void *))                             cdStreamClose,
-  (long (*)(void *))                            cdStreamTell
-};
-
-#ifdef DISABLE_MANY_OGG_OPEN_FILES
-static void ogg_free(int i)
-{
-  /* clear OGG file descriptor to prevent file from being closed */
-  cdd.toc.tracks[i].vf.datasource = NULL;
-
-  /* close VORBIS file structure */
-  ov_clear(&cdd.toc.tracks[i].vf);
-
-  /* indicates that the track is a seekable VORBIS file */
-  cdd.toc.tracks[i].vf.seekable = 1;
-
-  /* reset file reading position */
-  cdStreamSeek(cdd.toc.tracks[i].fd, 0, SEEK_SET);
-}
-#endif
-
-#endif
 
 void cdd_init(int samplerate)
 {
@@ -231,22 +182,6 @@ int cdd_context_save(uint8 *state)
   if (cdd.toc.tracks[cdd.index].type == TYPE_AUDIO)
   {
     /* get file read offset */
-#if defined(USE_LIBCHDR)
-    if (cdd.chd.file)
-    {
-      /* CHD file offset */
-      offset = cdd.chd.hunkofs;
-    }
-    else
-#endif
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-    if (cdd.toc.tracks[cdd.index].vf.seekable)
-    {
-      /* VORBIS file sample offset */
-      offset = ov_pcm_tell(&cdd.toc.tracks[cdd.index].vf);
-    }
-    else
-#endif 
     if (cdd.toc.tracks[cdd.index].fd)
     {
       /* PCM file offset */
@@ -300,42 +235,7 @@ int cdd_context_load(uint8 *state, char *version)
     /* current track is an audio track ? */
     if (cdd.toc.tracks[index].type == TYPE_AUDIO)
     {
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-#ifdef DISABLE_MANY_OGG_OPEN_FILES
-      /* check if track index has changed */
-      if (index != cdd.index)
-      {
-        /* close previous track VORBIS file structure to save memory */
-        if (cdd.toc.tracks[cdd.index].vf.datasource)
-        {
-          ogg_free(cdd.index);
-        }
-
-        /* open current track VORBIS file */
-        if (cdd.toc.tracks[index].vf.seekable)
-        {
-          ov_open_callbacks(cdd.toc.tracks[index].fd,&cdd.toc.tracks[index].vf,0,0,cb);
-        }
-      }
-#endif
-#endif
       /* seek to current file read offset */
-#if defined(USE_LIBCHDR)
-      if (cdd.chd.file)
-      {
-        /* CHD file offset */
-        cdd.chd.hunkofs = offset;
-      }
-      else
-#endif
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-      if (cdd.toc.tracks[index].vf.seekable)
-      {
-        /* VORBIS file sample offset */
-        ov_pcm_seek(&cdd.toc.tracks[index].vf, offset);
-      }
-      else
-#endif 
       if (cdd.toc.tracks[index].fd)
       {
         /* PCM file offset */
@@ -379,165 +279,6 @@ int cdd_load(char *filename, char *header)
     /* which should be handled by load_archive function */
     return (0);
   }
-
-#if defined(USE_LIBCHDR)
-  if (!memcmp("chd", &filename[strlen(filename) - 3], 3) || !memcmp("CHD", &filename[strlen(filename) - 3], 3))
-  {
-    int sectors = 0;
-    char metadata[256];
-    const chd_header *head;
-
-    /* open CHD file */
-    if (chd_open_file(fd, CHD_OPEN_READ, NULL, &cdd.chd.file) != CHDERR_NONE)
-    {
-      chd_close(cdd.chd.file);
-      cdStreamClose(fd);
-      return -1;
-    }
-
-    /* retrieve CHD header */
-    head = chd_get_header(cdd.chd.file);
-
-    /* detect invalid hunk size */
-    if ((head->hunkbytes == 0) || (head->hunkbytes % CD_FRAME_SIZE))
-    {
-      chd_close(cdd.chd.file);
-      cdStreamClose(fd);
-      return -1;
-    }
-
-    /* allocate hunk buffer */
-    cdd.chd.hunk = (uint8 *)malloc(head->hunkbytes);
-    if (!cdd.chd.hunk)
-    {
-      chd_close(cdd.chd.file);
-      cdStreamClose(fd);
-      return -1;
-    }
-
-    /* initialize hunk size (usually fixed to 8 sectors) */
-    cdd.chd.hunkbytes = head->hunkbytes;
-
-    /* initialize buffered hunk index */
-    cdd.chd.hunknum = -1;
-
-    /* retrieve tracks informations */
-    for (cdd.toc.last = 0; cdd.toc.last < 99; cdd.toc.last++)
-    {
-      int tracknum = 0, frames = 0, pregap = 0, postgap = 0;
-      char type[16], subtype[16], pgtype[16], pgsub[16];
-      type[0] = subtype[0] = pgtype[0] = pgsub[0] = 0;
-
-      /* attempt fetch either complete or partial metadata for current track */
-      if (chd_get_metadata(cdd.chd.file, CDROM_TRACK_METADATA2_TAG, cdd.toc.last, metadata, 256, 0, 0, 0) == CHDERR_NONE)
-      {
-        if (sscanf(metadata, CDROM_TRACK_METADATA2_FORMAT, &tracknum, &type[0], &subtype[0], &frames, &pregap, &pgtype[0], &pgsub[0], &postgap) != 8)
-          break;
-      }
-      else if (chd_get_metadata(cdd.chd.file, CDROM_TRACK_METADATA_TAG, cdd.toc.last, metadata, 256, 0, 0, 0) == CHDERR_NONE)
-      {
-        if (sscanf(metadata, CDROM_TRACK_METADATA_FORMAT, &tracknum, &type[0], &subtype[0], &frames) != 4)
-          break;
-      }
-
-      /* no more track */
-      else break;
-
-      /* detect out of order track number or invalid parameter */
-      if ((tracknum != (cdd.toc.last + 1)) || (frames < 0) || (pregap < 0) || (postgap < 0))
-        break;
-
-      /* detect track type  */
-      if (cdd.toc.last)
-      {
-        /* CD-ROM track supported only for first track */
-        if (strcmp(type, "AUDIO"))
-          break;
-
-        /* Audio track start LBA (adjusted with pregap length) */
-        cdd.toc.tracks[cdd.toc.last].start = cdd.toc.end + pregap;
-      }
-      else
-      {
-        if (!strcmp(type, "MODE1_RAW"))
-        {
-          /* Mode 1 RAW format (2352 bytes data blocks) */
-          cdd.sectorSize = 2352;
-          cdd.toc.tracks[0].type = TYPE_MODE1;
-        }
-        else if (!strcmp(type, "MODE1"))
-        {
-          /* Mode 1 COOKED format (2048 bytes data blocks) */
-          cdd.sectorSize = 2048;
-          cdd.toc.tracks[0].type = TYPE_MODE1;
-        }
-        else if (!strcmp(type, "MODE2_RAW"))
-        {
-          /* Mode 2 RAW format (2352 bytes data blocks) */
-          cdd.sectorSize = 2352;
-          cdd.toc.tracks[0].type = TYPE_MODE2;
-        }
-        else if (strcmp(type, "AUDIO"))
-        {
-          /* unsupported track format */
-          break;
-        }
-
-        /* First track start LBA (2s pause assumed by default) */
-        cdd.toc.tracks[0].start = 0;
-      }
-
-      /* detect pregap type */
-      if (pgtype[0] != 'V')
-      {
-        /* clear pause length for further calculations (not included in CHD file) */
-        pregap = 0;
-      }
-
-      /* track end LBA (remove included pause from CHD track length) */
-      cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + frames - pregap;
-   
-      /* CHD file offset for current track */
-      cdd.toc.tracks[cdd.toc.last].offset = (sectors + pregap - cdd.toc.tracks[cdd.toc.last].start) * CD_FRAME_SIZE;
-
-      /* update TOC end with postgap length */
-      cdd.toc.end = cdd.toc.tracks[cdd.toc.last].end + postgap;
-
-      /* update CHD file sector count (adjusted with end of the track padding) */
-      sectors += (((frames + CD_TRACK_PADDING - 1) / CD_TRACK_PADDING) * CD_TRACK_PADDING);
-
-      /* indicate valid track file */
-      cdd.toc.tracks[cdd.toc.last].fd = fd;
-    }
-
-    /* valid CD-ROM image file ? */
-    if (cdd.sectorSize)
-    {
-      /* read first chunk of data */
-      cdd.chd.hunknum = cdd.toc.tracks[0].offset / cdd.chd.hunkbytes;
-      chd_read(cdd.chd.file, cdd.chd.hunknum, cdd.chd.hunk);
-
-      /* copy CD image header + security code (skip RAW sector 16-byte header) */
-      memcpy(header, cdd.chd.hunk + (cdd.toc.tracks[0].offset % cdd.chd.hunkbytes) + ((cdd.sectorSize == 2048) ? 0 : 16), 0x210);
-    }
-
-    /* valid CD image ? */
-    if (cdd.toc.last && (cdd.toc.end < (100*60*75)))
-    {
-      /* Lead-out */
-      cdd.toc.tracks[cdd.toc.last].start = cdd.toc.end;
-
-      /* CD mounted */
-      cdd.loaded = HW_ADDON_MEGACD;
-      return 1;
-    }
-
-    /* invalid CHD file */
-    chd_close(cdd.chd.file);
-    cdStreamClose(fd);
-    return -1;
-  }
-#endif
 
   /* save a copy of base filename (max. 255 characters) */
   strncpy(fname, filename, 255);
@@ -725,20 +466,6 @@ int cdd_load(char *filename, char *header)
             /* adjust current track file read offset with WAVE header length */
             cdd.toc.tracks[cdd.toc.last].offset -= dataOffset;
           }
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-          else if (!ov_open_callbacks(cdd.toc.tracks[cdd.toc.last].fd,&cdd.toc.tracks[cdd.toc.last].vf,0,0,cb))
-          {
-            /* retrieve stream infos */
-            vorbis_info *info = ov_info(&cdd.toc.tracks[cdd.toc.last].vf,-1);
-            if (!info || (info->rate != 44100) || (info->channels != 2))
-            {
-              /* unsupported VORBIS file format (stereo @44.1kHz only) */
-              ov_clear(&cdd.toc.tracks[cdd.toc.last].vf);
-              cdd.toc.tracks[cdd.toc.last].fd = 0;
-              break;
-            }
-          }
-#endif
           else
           {
             /* unsupported audio file */
@@ -871,32 +598,6 @@ int cdd_load(char *filename, char *header)
           /* adjust current track file read offset with previous track end time (only used for AUDIO track) */
           cdd.toc.tracks[cdd.toc.last].offset += cdd.toc.end * 2352;
 
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-          if (cdd.toc.tracks[cdd.toc.last].vf.datasource)
-          { 
-            /* convert read offset to PCM sample offset */
-            cdd.toc.tracks[cdd.toc.last].offset = cdd.toc.tracks[cdd.toc.last].offset / 4;
-
-            /* current track end time */
-            cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + ov_pcm_total(&cdd.toc.tracks[cdd.toc.last].vf,-1)/588;
-            if (cdd.toc.tracks[cdd.toc.last].end <= cdd.toc.tracks[cdd.toc.last].start)
-            {
-              /* invalid length */
-              ov_clear(&cdd.toc.tracks[cdd.toc.last].vf);
-              cdd.toc.tracks[cdd.toc.last].fd = 0;
-              cdd.toc.tracks[cdd.toc.last].end = 0;
-              cdd.toc.tracks[cdd.toc.last].start = 0;
-              cdd.toc.tracks[cdd.toc.last].offset = 0;
-              break;
-            }
-
-#ifdef DISABLE_MANY_OGG_OPEN_FILES
-            /* close VORBIS file structure to save memory */
-            ogg_free(cdd.toc.last);
-#endif
-          }
-          else
-#endif
           {
             /* current track end time */
             cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 0, SEEK_END);
@@ -939,13 +640,6 @@ int cdd_load(char *filename, char *header)
     }
 
     /* close any incomplete track file */
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-    if (cdd.toc.tracks[cdd.toc.last].vf.datasource)
-    {
-      ov_clear(&cdd.toc.tracks[cdd.toc.last].vf);
-    }
-    else
-#endif
     if (cdd.toc.tracks[cdd.toc.last].fd)
     {
       cdStreamClose(cdd.toc.tracks[cdd.toc.last].fd);
@@ -1048,69 +742,6 @@ int cdd_load(char *filename, char *header)
         /* increment track number */
         cdd.toc.last++;
       }
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-      else if (!ov_open_callbacks(fd,&cdd.toc.tracks[cdd.toc.last].vf,0,0,cb))
-      {
-        /* retrieve stream infos */
-        vorbis_info *info = ov_info(&cdd.toc.tracks[cdd.toc.last].vf,-1);
-        if (!info || (info->rate != 44100) || (info->channels != 2))
-        {
-          /* unsupported OGG file */
-          ov_clear(&cdd.toc.tracks[cdd.toc.last].vf);
-          break;
-        }
-
-        /* initialize current track file descriptor */
-        cdd.toc.tracks[cdd.toc.last].fd = fd;
-
-        /* initialize current track start time (based on previous track end time) */
-        cdd.toc.tracks[cdd.toc.last].start = cdd.toc.end;
-
-        /* add default 2s PAUSE between tracks */
-        cdd.toc.tracks[cdd.toc.last].start += 150;
-
-        /* current track end time */
-        cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + ((ov_pcm_total(&cdd.toc.tracks[cdd.toc.last].vf,-1) + 587) / 588);
-        if (cdd.toc.tracks[cdd.toc.last].end <= cdd.toc.tracks[cdd.toc.last].start)
-        {
-          /* invalid file length */
-          ov_clear(&cdd.toc.tracks[cdd.toc.last].vf);
-          cdd.toc.tracks[cdd.toc.last].fd = 0;
-          cdd.toc.tracks[cdd.toc.last].end = 0;
-          cdd.toc.tracks[cdd.toc.last].start = 0;
-          break;
-        }
-
-        /* initialize file read offset for current track */
-        cdd.toc.tracks[cdd.toc.last].offset = cdd.toc.tracks[cdd.toc.last].start * 588;
-
-        /* auto-detect PAUSE within audio files */
-        ov_pcm_seek(&cdd.toc.tracks[cdd.toc.last].vf, 100 * 588);
-#if defined(USE_LIBVORBIS)
-        ov_read(&cdd.toc.tracks[cdd.toc.last].vf, (char *)head, 32, 0, 2, 1, 0);
-#else
-        ov_read(&cdd.toc.tracks[cdd.toc.last].vf, (char *)head, 32, 0);
-#endif
-        ov_pcm_seek(&cdd.toc.tracks[cdd.toc.last].vf, 0);
-        if (*(int32 *)head == 0)
-        {
-          /* assume 2s PAUSE is included at the beginning of the file */
-          cdd.toc.tracks[cdd.toc.last].offset -= 150 * 588;
-          cdd.toc.tracks[cdd.toc.last].end -= 150;
-        }
-
-#ifdef DISABLE_MANY_OGG_OPEN_FILES
-        /* close VORBIS file structure to save memory */
-        ogg_free(cdd.toc.last);
-#endif
-
-        /* update TOC end */
-        cdd.toc.end = cdd.toc.tracks[cdd.toc.last].end;
-
-        /* increment track number */
-        cdd.toc.last++;
-      }
-#endif
       else
       {
         /* unsupported audio file format */
@@ -1269,14 +900,6 @@ void cdd_unload(void)
     /* close CD tracks */
     for (i=0; i<cdd.toc.last; i++)
     {
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-      if (cdd.toc.tracks[i].vf.datasource)
-      {
-        /* close any opened VORBIS file */
-        ov_clear(&cdd.toc.tracks[i].vf);
-      }
-      else
-#endif
       if (cdd.toc.tracks[i].fd)
       {
         /* check if single file is used for consecutive tracks */
@@ -1318,50 +941,6 @@ void cdd_read_data(uint8 *dst, uint8 *subheader)
   /* only allow reading (first) CD-ROM track sectors */
   if (cdd.toc.tracks[cdd.index].type && (cdd.lba >= 0))
   {
-#if defined(USE_LIBCHDR)
-    if (cdd.chd.file)
-    {
-      /* CHD file offset */
-      int offset = cdd.toc.tracks[0].offset + (cdd.lba * CD_FRAME_SIZE);
-
-      /* CHD hunk index */
-      int hunknum = offset / cdd.chd.hunkbytes;
-
-      /* update CHD hunk cache if necessary */
-      if (hunknum != cdd.chd.hunknum)
-      {
-        chd_read(cdd.chd.file, hunknum, cdd.chd.hunk);
-        cdd.chd.hunknum = hunknum;
-      }
-
-      /* check sector size */
-      if (cdd.sectorSize == 2048)
-      {
-        /* read Mode 1 user data (2048 bytes) */
-        memcpy(dst, cdd.chd.hunk + (offset % cdd.chd.hunkbytes), 2048);
-      }
-      else
-      {
-        /* check if sub-header is required (Mode 2 sector only) */
-        if (!subheader)
-        {
-          /* read Mode 1 user data (2048 bytes), skipping block sync pattern (12 bytes) + block header (4 bytes)*/
-          memcpy(dst, cdd.chd.hunk + (offset % cdd.chd.hunkbytes) + 12 + 4, 2048);
-        }
-        else
-        {
-          /* read Mode 2 sub-header (first 4 bytes), skipping block sync pattern (12 bytes) + block header (4 bytes)*/
-          memcpy(subheader, cdd.chd.hunk + (offset % cdd.chd.hunkbytes) + 12 + 4, 4);
-
-          /* read Mode 2 user data (max 2328 bytes), skipping Mode 2 sub-header (8 bytes) */
-          memcpy(dst, cdd.chd.hunk + (offset % cdd.chd.hunkbytes) + 12 + 4 + 8, 2328);
-        }
-      }
-
-      return;
-    }
-#endif
-
     /* check sector size */
     if (cdd.sectorSize == 2048)
     {
@@ -1393,43 +972,7 @@ void cdd_read_data(uint8 *dst, uint8 *subheader)
 
 void cdd_seek_audio(int index, int lba)
 {
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-#ifdef DISABLE_MANY_OGG_OPEN_FILES
-  /* check if track index has changed */
-  if (index != cdd.index)
-  {
-    /* close previous track VORBIS file structure to save memory */
-    if (cdd.toc.tracks[cdd.index].vf.datasource)
-    {
-      ogg_free(cdd.index);
-    }
-
-    /* open current track VORBIS file */
-    if (cdd.toc.tracks[index].vf.seekable)
-    {
-      ov_open_callbacks(cdd.toc.tracks[index].fd,&cdd.toc.tracks[index].vf,0,0,cb);
-    }
-  }
-#endif
-#endif
-
   /* seek to track position */
-#if defined(USE_LIBCHDR)
-  if (cdd.chd.file)
-  {
-    /* CHD file offset */
-    cdd.chd.hunkofs = cdd.toc.tracks[index].offset + (lba * CD_FRAME_SIZE);
-  }
-  else
-#endif
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-  if (cdd.toc.tracks[index].vf.seekable)
-  {
-    /* VORBIS AUDIO track */
-    ov_pcm_seek(&cdd.toc.tracks[index].vf, (lba * 588) - cdd.toc.tracks[index].offset);
-  }
-  else
-#endif 
   if (cdd.toc.tracks[index].fd)
   {
     /* PCM AUDIO track */
@@ -1455,152 +998,6 @@ void cdd_read_audio(unsigned int samples)
     int endVol = cdd.fader[1];
 
     /* read samples from current block */
-#if defined(USE_LIBCHDR)
-    if (cdd.chd.file)
-    {
-#ifndef LSB_FIRST
-      int16 *ptr = (int16 *) (cdd.chd.hunk + (cdd.chd.hunkofs % cdd.chd.hunkbytes));
-#else
-      uint8 *ptr = cdd.chd.hunk + (cdd.chd.hunkofs % cdd.chd.hunkbytes);
-#endif
-
-      /* process 16-bit (big-endian) stereo samples */
-      for (i=0; i<samples; i++)
-      {
-        /* CHD hunk index */
-        int hunknum = cdd.chd.hunkofs / cdd.chd.hunkbytes;
-
-        /* update CHD hunk cache if necessary */
-        if (hunknum != cdd.chd.hunknum)
-        {
-          chd_read(cdd.chd.file, hunknum, cdd.chd.hunk);
-          cdd.chd.hunknum = hunknum;
-        }
-
-        /* CD-DA fader multiplier (cf. LC7883 datasheet) */
-        /* (MIN) 0,1,2,3,4,8,12,16,20...,1020,1024 (MAX) */
-        mul = (curVol & 0x7fc) ? (curVol & 0x7fc) : (curVol & 0x03);
-
-        /* left & right channels */
-#ifndef LSB_FIRST
-        l = ((ptr[0] * mul) / 1024);
-        r = ((ptr[1] * mul) / 1024);
-        ptr+=2;
-#else
-        l = (((int16)((ptr[1] + ptr[0]*256)) * mul) / 1024);
-        r = (((int16)((ptr[3] + ptr[2]*256)) * mul) / 1024);
-        ptr+=4;
-#endif
-
-        /* CD-DA output mixing volume (0-100%) */
-        l = (l * config.cdda_volume) / 100;
-        r = (r * config.cdda_volume) / 100;
-
-        /* update blip buffer */
-        blip_add_delta_fast(snd.blips[2], i, l-prev_l, r-prev_r);
-        prev_l = l;
-        prev_r = r;
-
-        /* update CHD file offset */
-        cdd.chd.hunkofs += 4;
-
-        /* detect end of sector data (2352 bytes) */
-        if ((cdd.chd.hunkofs % CD_FRAME_SIZE) == CD_MAX_SECTOR_DATA)
-        {
-          /* skip subcode data (96 bytes) */
-          cdd.chd.hunkofs += CD_MAX_SUBCODE_DATA;
-
-          /* reinitialize hunk cache pointer */
-#ifndef LSB_FIRST
-          ptr = (int16 *) (cdd.chd.hunk + (cdd.chd.hunkofs % cdd.chd.hunkbytes));
-#else
-          ptr = cdd.chd.hunk + (cdd.chd.hunkofs % cdd.chd.hunkbytes);
-#endif
-        }
-
-        /* update CD-DA fader volume (one step/sample) */
-        if (curVol < endVol)
-        {
-          /* fade-in */
-          curVol++;
-        }
-        else if (curVol > endVol)
-        {
-          /* fade-out */
-          curVol--;
-        }
-        else if (!curVol)
-        {
-          /* audio will remain muted until next setup */
-          break;
-        }
-      }
-    }
-    else
-#endif
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-    if (cdd.toc.tracks[cdd.index].vf.datasource)
-    {
-      int len, done = 0;
-      int16 *ptr = (int16 *) (cdc.ram);
-      samples = samples * 4;
-      while (done < samples)
-      {
-#ifdef USE_LIBVORBIS
-        len = ov_read(&cdd.toc.tracks[cdd.index].vf, (char *)(cdc.ram + done), samples - done, 0, 2, 1, 0);
-#else
-        len = ov_read(&cdd.toc.tracks[cdd.index].vf, (char *)(cdc.ram + done), samples - done, 0);
-#endif
-        if (len <= 0) 
-        {
-          done = samples;
-          break;
-        }
-        done += len;
-      }
-      samples = done / 4;
-
-      /* process 16-bit (host-endian) stereo samples */
-      for (i=0; i<samples; i++)
-      {
-        /* CD-DA fader multiplier (cf. LC7883 datasheet) */
-        /* (MIN) 0,1,2,3,4,8,12,16,20...,1020,1024 (MAX) */
-        mul = (curVol & 0x7fc) ? (curVol & 0x7fc) : (curVol & 0x03);
-
-        /* left & right channels */
-        l = ((ptr[0] * mul) / 1024);
-        r = ((ptr[1] * mul) / 1024);
-
-        /* CD-DA output mixing volume (0-100%) */
-        l = (l * config.cdda_volume) / 100;
-        r = (r * config.cdda_volume) / 100;
-
-        /* update blip buffer */
-        blip_add_delta_fast(snd.blips[2], i, l-prev_l, r-prev_r);
-        prev_l = l;
-        prev_r = r;
-        ptr+=2;
-
-        /* update CD-DA fader volume (one step/sample) */
-        if (curVol < endVol)
-        {
-          /* fade-in */
-          curVol++;
-        }
-        else if (curVol > endVol)
-        {
-          /* fade-out */
-          curVol--;
-        }
-        else if (!curVol)
-        {
-          /* audio will remain muted until next setup */
-          break;
-        }
-      }
-    }
-    else
-#endif
     {
 #ifdef LSB_FIRST
       int16 *ptr = (int16 *) (cdc.ram);
