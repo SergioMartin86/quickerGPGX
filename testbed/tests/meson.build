@@ -19,7 +19,6 @@ protectedTestSet = [
 openSourceTestSet = [
   'dinoRunner.playaround',
   'drunkasilike.playaround',
-  'drunkasilike.savestart',
   'maiNurse.playaround',
 ]
 
