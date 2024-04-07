@@ -24,7 +24,7 @@ jobs:
     - name: Create build directory
       run: mkdir -p build
     - name: Run meson configuration
-      run: meson setup build . -DonlyOpenSource=true
+      run: meson setup build . -DonlyFreeLicenseRoms=true
     - name: Building project
       run: ninja -C build
     - name: Running tests
