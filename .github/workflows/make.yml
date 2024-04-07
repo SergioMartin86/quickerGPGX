@@ -22,13 +22,13 @@ jobs:
     - name: Installing meson and ninja
       run: python3 -m pip install meson ninja
     - name: Create build directory
-      run: mkdir -p testbed/build
+      run: mkdir -p build
     - name: Run meson configuration
-      run: meson setup testbed/build testbed -DonlyOpenSource=true
+      run: meson setup build . -DonlyOpenSource=true
     - name: Building project
-      run: ninja -C testbed/build
+      run: ninja -C build
     - name: Running tests
-      run: ninja test -C testbed/build
+      run: ninja test -C build
     - uses: actions/upload-artifact@v4
       with:
         name: meson-logs
