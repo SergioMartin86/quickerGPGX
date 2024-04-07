@@ -24,7 +24,7 @@ freeTestSet = [
 
 # Creating test set based on whether copyrighted roms are to be used
 testSet = freeTestSet
-if get_option('DonlyFreeLicenseRoms') == false
+if get_option('onlyFreeLicenseRoms') == false
  testSet += protectedTestSet
 endif
 
