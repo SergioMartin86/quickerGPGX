@@ -554,8 +554,6 @@ void initialize ()
   __tmpInput->dev[0] = 0;  
   __tmpInput->dev[1] = 255;
 
-  bitmap.data = malloc(1024*1024*4);
-
   /**
    * Allocating large buffers
   */
@@ -594,7 +592,7 @@ void initialize ()
   }
     
   ext.cd_hw.gfx_hw.lut_pixel = (uint8*) calloc(sizeof(uint8), 0x200);
-  ext.cd_hw.gfx_hw.lut_cell = (uint8*) calloc(sizeof(uint8), 0x100);
+  ext.cd_hw.gfx_hw.lut_cell  = (uint8*) calloc(sizeof(uint8), 0x100);
 
   // cd_hw/pcm.h
 
@@ -616,11 +614,11 @@ void initialize ()
 
   // z80.h
 
-  SZ = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZ_BIT = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZP = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZHV_inc = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZHV_dec = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZ        = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZ_BIT    = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZP       = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZHV_inc  = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZHV_dec  = (UINT8* ) calloc(sizeof(UINT8), 256);
   SZHVC_add = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
   SZHVC_sub = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
 
@@ -629,6 +627,35 @@ void initialize ()
   boot_rom = (uint8*) calloc(sizeof(uint8), 0x800);
   work_ram = (uint8*) calloc(sizeof(uint8), 0x10000);
   zram     = (uint8*) calloc(sizeof(uint8), 0x2000);
+
+  // system.h
+
+  bitmap.data = (uint8_t*) calloc(sizeof(uint8_t), 1024*1024*4);
+
+  // vdp_ctrl.h
+
+  sat  = (uint8*) calloc (sizeof(uint8), 0x400);
+  vram = (uint8*) calloc (sizeof(uint8), 0x10000);
+  bg_name_dirty = (uint8 *) calloc (sizeof(uint8 ), 0x800);
+  bg_name_list  = (uint16*) calloc (sizeof(uint16), 0x800);
+  // vdp_render.h
+
+  bg_pattern_cache = (uint8      *) calloc (sizeof(uint8      ), 0x80000);
+  name_lut         = (uint8      *) calloc (sizeof(uint8      ), 0x400);
+  bp_lut           = (uint32     *) calloc (sizeof(uint32     ), 0x10000);
+  lut[0]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  lut[1]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  lut[2]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  lut[3]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  lut[4]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  lut[5]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
+  pixel            = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x100);
+  pixel_lut[0]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
+  pixel_lut[1]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
+  pixel_lut[2]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
+  pixel_lut_m4     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x40);
+  linebuf[0]       = (uint8      *) calloc (sizeof(uint8      ), 0x200);
+  linebuf[1]       = (uint8      *) calloc (sizeof(uint8      ), 0x200);
 
   /* set default config */
   set_config_defaults();

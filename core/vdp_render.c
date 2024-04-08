@@ -56,22 +56,6 @@
 extern md_ntsc_t *md_ntsc;
 extern sms_ntsc_t *sms_ntsc;
 
-
-/* Output pixels type*/
-#if defined(USE_8BPP_RENDERING)
-#define PIXEL_OUT_T uint8
-#elif defined(USE_32BPP_RENDERING)
-#define PIXEL_OUT_T uint32
-#else
-#define PIXEL_OUT_T uint16
-#endif
-
-
-/* Pixel priority look-up tables information */
-#define LUT_MAX     (6)
-#define LUT_SIZE    (0x10000)
-
-
 #ifdef ALIGN_LONG
 #undef READ_LONG
 #undef WRITE_LONG
@@ -562,24 +546,24 @@ static const uint32 tms_palette[16] =
 #endif
 
 /* Cached and flipped patterns */
-static uint8 ALIGNED_(4) bg_pattern_cache[0x80000];
+uint8* bg_pattern_cache;
 
 /* Sprite pattern name offset look-up table (Mode 5) */
-static uint8 name_lut[0x400];
+uint8* name_lut;
 
 /* Bitplane to packed pixel look-up table (Mode 4) */
-static uint32 bp_lut[0x10000];
+uint32* bp_lut;
 
 /* Layer priority pixel look-up tables */
-static uint8 lut[LUT_MAX][LUT_SIZE];
+uint8* lut[LUT_MAX];
 
 /* Output pixel data look-up tables*/
-static PIXEL_OUT_T pixel[0x100];
-static PIXEL_OUT_T pixel_lut[3][0x200];
-static PIXEL_OUT_T pixel_lut_m4[0x40];
+PIXEL_OUT_T* pixel;
+PIXEL_OUT_T* pixel_lut[3];
+PIXEL_OUT_T* pixel_lut_m4;
 
 /* Background & Sprite line buffers */
-static uint8 linebuf[2][0x200];
+uint8* linebuf[2];
 
 /* Sprite limit flag */
 static uint8 spr_ovr;
@@ -4717,13 +4701,14 @@ void render_reset(void)
   memset(bitmap.data, 0, bitmap.pitch * bitmap.height);
 
   /* Clear line buffers */
-  memset(linebuf, 0, sizeof(linebuf));
+  memset(linebuf[0], 0, 0x200);
+  memset(linebuf[1], 0, 0x200);
 
   /* Clear color palettes */
-  memset(pixel, 0, sizeof(pixel));
+  memset(pixel, 0, sizeof(PIXEL_OUT_T) * 0x100);
 
   /* Clear pattern cache */
-  memset ((char *) bg_pattern_cache, 0, sizeof (bg_pattern_cache));
+  memset ((char *) bg_pattern_cache, 0, 0x80000);
 
   /* Reset Sprite infos */
   spr_ovr = spr_col = object_count[0] = object_count[1] = 0;
