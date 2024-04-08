@@ -1778,7 +1778,7 @@ void scd_init(void)
   memset(scd.word_ram[0], 0x00, 0x20000);
   memset(scd.word_ram[1], 0x00, 0x20000);
   memset(scd.word_ram_2M, 0x00, 0x40000);
-  memset(scd.bram, 0x00, sizeof(scd.bram));
+  memset(scd.bram, 0x00, 0x2000);
 }
 
 void scd_reset(int hard)
