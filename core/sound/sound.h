@@ -40,6 +40,8 @@
 #ifndef _SOUND_H_
 #define _SOUND_H_
 
+extern int* fm_buffer;
+
 /* Function prototypes */
 extern void sound_init(void);
 extern void sound_reset(void);

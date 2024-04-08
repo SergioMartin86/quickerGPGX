@@ -610,6 +610,19 @@ void initialize ()
   ext.cd_hw.word_ram_2M = (uint8*) calloc(sizeof(uint8), 0x40000);
   ext.cd_hw.bram        = (uint8*) calloc(sizeof(uint8), 0x2000);
   
+  // sound.h
+
+  fm_buffer = (int*) calloc(sizeof(int), 1080 * 2 * 48);
+
+  // z80.h
+
+  SZ = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZ_BIT = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZP = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZHV_inc = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZHV_dec = (UINT8* ) calloc(sizeof(UINT8), 256);
+  SZHVC_add = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
+  SZHVC_sub = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
 
   /* set default config */
   set_config_defaults();

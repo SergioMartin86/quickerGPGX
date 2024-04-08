@@ -44,11 +44,7 @@
 #define YM2612_CLOCK_RATIO (7*6)
 
 /* FM output buffer (large enough to hold a whole frame at original chips rate) */
-#if defined(HAVE_YM3438_CORE) || defined(HAVE_OPLL_CORE)
-static int fm_buffer[1080 * 2 * 24];
-#else
-static int fm_buffer[1080 * 2];
-#endif
+int* fm_buffer;
 
 static int fm_last[2];
 static int *fm_ptr;

@@ -48,6 +48,13 @@ typedef struct
   int    (*irq_callback)(int irqline);
 }  Z80_Regs;
 
+extern UINT8* SZ;            /* zero and sign flags */
+extern UINT8* SZ_BIT;          /* zero, sign and parity/overflow (=zero) flags for BIT opcode */
+extern UINT8* SZP;;             /* zero, sign and parity flags */
+extern UINT8* SZHV_inc;        /* zero, sign, half carry and overflow flags INC r8 */
+extern UINT8* SZHV_dec;        /* zero, sign, half carry and overflow flags DEC r8 */
+extern UINT8* SZHVC_add; /* flags for ADD opcode */
+extern UINT8* SZHVC_sub; /* flags for SUB opcode */
 
 extern Z80_Regs Z80;
 extern UINT8 z80_last_fetch;

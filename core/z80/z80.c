@@ -222,14 +222,13 @@ unsigned char (*z80_readport)(unsigned int port);
 
 static UINT32 EA;
 
-static UINT8 SZ[256];       /* zero and sign flags */
-static UINT8 SZ_BIT[256];   /* zero, sign and parity/overflow (=zero) flags for BIT opcode */
-static UINT8 SZP[256];      /* zero, sign and parity flags */
-static UINT8 SZHV_inc[256]; /* zero, sign, half carry and overflow flags INC r8 */
-static UINT8 SZHV_dec[256]; /* zero, sign, half carry and overflow flags DEC r8 */
-
-static UINT8 SZHVC_add[2*256*256]; /* flags for ADD opcode */
-static UINT8 SZHVC_sub[2*256*256]; /* flags for SUB opcode */
+UINT8* SZ;       
+UINT8* SZ_BIT;   
+UINT8* SZP;;     
+UINT8* SZHV_inc; 
+UINT8* SZHV_dec; 
+UINT8* SZHVC_add;
+UINT8* SZHVC_sub;
 
 static const UINT16 cc_op[0x100] = {
    4*15,10*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15, 4*15,11*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15,
