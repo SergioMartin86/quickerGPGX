@@ -136,7 +136,7 @@ static const uint8 shift_table[]        = { 6, 7, 0, 8 };
 static const uint8 col_mask_table[]     = { 0x0F, 0x1F, 0x0F, 0x3F };
 static const uint16 row_mask_table[]    = { 0x0FF, 0x1FF, 0x2FF, 0x3FF };
 
-static uint8 border;            /* Border color index */
+uint8 border;            /* Border color index */
 static uint8 pending;           /* Pending write flag */
 static uint8 code;              /* Code register */
 static uint16 addr;             /* Address register */
@@ -3097,4 +3097,76 @@ static void vdp_dma_fill(unsigned int length)
       addr += reg[15] * length;
     }
   }
+}
+
+void write_cram_byte(int addr, uint8 val)
+{
+	uint16 *p;
+	uint16 data;
+	int index;
+
+	p = (uint16 *)&cram[addr & 0x7E];
+	data = *p;
+	data = ((data & 0x1C0) << 3) | ((data & 0x038) << 2) | ((data & 0x007) << 1);
+
+	if (addr & 1)
+	{
+		data &= 0xFF00;
+		data |= val;
+	}
+	else
+	{
+		data &= 0x00FF;
+		data |= val << 8;
+	}
+
+	data = ((data & 0xE00) >> 3) | ((data & 0x0E0) >> 2) | ((data & 0x00E) >> 1);
+
+	if (*p != data)
+	{
+		index = (addr >> 1) & 0x3F;
+		*p = data;
+
+		if (index & 0x0F)
+		{
+			color_update_m5(index, data);
+		}
+
+		if (index == border)
+		{
+			color_update_m5(0x00, data);
+		}
+	}
+}
+
+void write_vram_byte(int addr, uint8 val)
+{
+	uint8 *p;
+	addr &= 0xffff;
+	p = &vram[addr];
+	if (*p != val)
+	{
+		int name;
+		*p = val;
+		MARK_BG_DIRTY(addr);
+	}
+}
+
+void flush_vram_cache(void)
+{
+    if (bg_list_index)
+    {
+		update_bg_pattern_cache(bg_list_index);
+		bg_list_index = 0;
+    }
+}
+
+void vdp_invalidate_full_cache(void)
+{
+    bg_list_index = (reg[1] & 0x04) ? 0x800 : 0x200;
+    for (int i=0;i<bg_list_index;i++)
+    {
+        bg_name_list[i] = i;
+        bg_name_dirty[i] = 0xFF;
+    }
 }
