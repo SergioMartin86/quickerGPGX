@@ -62,31 +62,6 @@ INLINE unsigned char z80_unused_r(unsigned int address)
   return 0xFF;
 }
 
-INLINE void z80_lockup_w(unsigned int address, unsigned char data)
-{
-#ifdef LOGERROR
-  error("Z80 lockup write %04X = %02X (%x)\n", address, data, Z80.pc.w.l);
-#endif
-  if (!config.force_dtack)
-  {
-    Z80.cycles = 0xFFFFFFFF;
-    zstate = 0;
-  }
-}
-
-INLINE unsigned char z80_lockup_r(unsigned int address)
-{
-#ifdef LOGERROR
-  error("Z80 lockup read %04X (%x)\n", address, Z80.pc.w.l);
-#endif
-  if (!config.force_dtack)
-  {
-    Z80.cycles = 0xFFFFFFFF;
-    zstate = 0;
-  }
-  return 0xFF;
-}
-
 
 /*--------------------------------------------------------------------------*/
 /*  Z80 Memory handlers (Genesis mode)                                      */

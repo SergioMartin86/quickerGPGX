@@ -38,142 +38,9 @@
 
 #include "shared.h"
 #include "gamepad.h"
+#include "eeprom_i2c.h"
 
-/* Some notes from 8BitWizard (http://gendev.spritesmind.net/forum/viewtopic.php?t=206):
- *
- * Mode 1 (7-bit) - the chip takes a single byte with a 7-bit memory address and a R/W bit (X24C01)
- * Mode 2 (8-bit) - the chip takes a 7-bit device address and R/W bit followed by an 8-bit memory address;
- * the device address may contain up to three more memory address bits (24C01 - 24C16).
- * You can also string eight 24C01, four 24C02, two 24C08, or various combinations, set their address config lines correctly,
- * and the result appears exactly the same as a 24C16
- * Mode 3 (16-bit) - the chip takes a 7-bit device address and R/W bit followed by a 16-bit memory address (24C32 and larger)
- *
- */
-
-typedef enum
-{
-  STAND_BY = 0,
-  WAIT_STOP,
-  GET_DEVICE_ADR,
-  GET_WORD_ADR_7BITS,
-  GET_WORD_ADR_HIGH,
-  GET_WORD_ADR_LOW,
-  WRITE_DATA,
-  READ_DATA
-} T_I2C_STATE;
-
-typedef enum
-{
-  NO_EEPROM = -1,
-  EEPROM_X24C01,
-  EEPROM_X24C02,
-  EEPROM_24C01,
-  EEPROM_24C02,
-  EEPROM_24C04,
-  EEPROM_24C08,
-  EEPROM_24C16,
-  EEPROM_24C32,
-  EEPROM_24C64,
-  EEPROM_24C65,
-  EEPROM_24C128,
-  EEPROM_24C256,
-  EEPROM_24C512
-} T_I2C_TYPE;
-
-typedef struct
-{
-  uint8 address_bits;
-  uint16 size_mask;
-  uint16 pagewrite_mask;
-} T_I2C_SPEC;
-
-static const T_I2C_SPEC i2c_specs[] =
-{
-  { 7 , 0x7F   , 0x03},
-  { 8 , 0xFF   , 0x03},
-  { 8 , 0x7F   , 0x07},
-  { 8 , 0xFF   , 0x07},
-  { 8 , 0x1FF  , 0x0F},
-  { 8 , 0x3FF  , 0x0F},
-  { 8 , 0x7FF  , 0x0F},
-  {16 , 0xFFF  , 0x1F},
-  {16 , 0x1FFF , 0x1F},
-  {16 , 0x1FFF , 0x3F},
-  {16 , 0x3FFF , 0x3F},
-  {16 , 0x7FFF , 0x3F},
-  {16 , 0xFFFF , 0x7F}
-};
-
-typedef struct
-{
-  char id[16];
-  uint32 sp;
-  uint16 chk;
-  void (*mapper_init)(void);
-  T_I2C_TYPE eeprom_type;
-} T_I2C_GAME;
-
-static void mapper_i2c_ea_init(void);
-static void mapper_i2c_sega_init(void);
-static void mapper_i2c_acclaim_16M_init(void);
-static void mapper_i2c_acclaim_32M_init(void);
-static void mapper_i2c_jcart_init(void);
-
-static const T_I2C_GAME i2c_database[] = 
-{
-  {"T-50176"  , 0          , 0      , mapper_i2c_ea_init          , EEPROM_X24C01 }, /* Rings of Power */
-  {"T-50396"  , 0          , 0      , mapper_i2c_ea_init          , EEPROM_X24C01 }, /* NHLPA Hockey 93 */
-  {"T-50446"  , 0          , 0      , mapper_i2c_ea_init          , EEPROM_X24C01 }, /* John Madden Football 93 */
-  {"T-50516"  , 0          , 0      , mapper_i2c_ea_init          , EEPROM_X24C01 }, /* John Madden Football 93 (Championship Ed.) */
-  {"T-50606"  , 0          , 0      , mapper_i2c_ea_init          , EEPROM_X24C01 }, /* Bill Walsh College Football (warning: invalid SRAM header !) */
-  {" T-12046" , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Megaman - The Wily Wars (warning: SRAM hack exists !) */
-  {" T-12053" , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Rockman Mega World (warning: SRAM hack exists !) */
-  {"MK-1215"  , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Evander 'Real Deal' Holyfield's Boxing */
-  {"MK-1228"  , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Greatest Heavyweights of the Ring (U)(E) */
-  {"G-5538"   , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Greatest Heavyweights of the Ring (J) */
-  {"PR-1993"  , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Greatest Heavyweights of the Ring (Prototype) */
-  {" G-4060"  , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Wonderboy in Monster World (warning: SRAM hack exists !) */
-  {"00001211" , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Sports Talk Baseball */
-  {"00004076" , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Honoo no Toukyuuji Dodge Danpei */
-  {"G-4524"   , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Ninja Burai Densetsu */
-  {"00054503" , 0          , 0      , mapper_i2c_sega_init        , EEPROM_X24C01 }, /* Game Toshokan  */
-  {"T-81033"  , 0          , 0      , mapper_i2c_acclaim_16M_init , EEPROM_X24C02 }, /* NBA Jam (J) */
-  {"T-081326" , 0          , 0      , mapper_i2c_acclaim_16M_init , EEPROM_X24C02 }, /* NBA Jam (UE) */
-  {"T-081276" , 0          , 0      , mapper_i2c_acclaim_32M_init , EEPROM_24C02  }, /* NFL Quarterback Club */
-  {"T-81406"  , 0          , 0      , mapper_i2c_acclaim_32M_init , EEPROM_24C04  }, /* NBA Jam TE */
-  {"T-081586" , 0          , 0      , mapper_i2c_acclaim_32M_init , EEPROM_24C16  }, /* NFL Quarterback Club '96 */
-  {"T-81476"  , 0          , 0      , mapper_i2c_acclaim_32M_init , EEPROM_24C65  }, /* Frank Thomas Big Hurt Baseball */
-  {"T-81576"  , 0          , 0      , mapper_i2c_acclaim_32M_init , EEPROM_24C65  }, /* College Slam */
-  {"T-120106" , 0          , 0      , mapper_i2c_jcart_init       , EEPROM_24C08  }, /* Brian Lara Cricket */
-  {"00000000" , 0x444e4c44 , 0x168B , mapper_i2c_jcart_init       , EEPROM_24C08  }, /* Micro Machines Military */
-  {"00000000" , 0x444e4c44 , 0x165E , mapper_i2c_jcart_init       , EEPROM_24C16  }, /* Micro Machines Turbo Tournament 96 */
-  {"T-120096" , 0          , 0      , mapper_i2c_jcart_init       , EEPROM_24C16  }, /* Micro Machines 2 - Turbo Tournament */
-  {"T-120146" , 0          , 0      , mapper_i2c_jcart_init       , EEPROM_24C65  }, /* Brian Lara Cricket 96 / Shane Warne Cricket */
-  {"00000000" , 0xfffffffc , 0x168B , mapper_i2c_jcart_init       , NO_EEPROM     }, /* Super Skidmarks */
-  {"00000000" , 0xfffffffc , 0x165E , mapper_i2c_jcart_init       , NO_EEPROM     }, /* Pete Sampras Tennis (Prototype) */
-  {"T-120066" , 0          , 0      , mapper_i2c_jcart_init       , NO_EEPROM     }, /* Pete Sampras Tennis */
-  {"T-123456" , 0          , 0      , mapper_i2c_jcart_init       , NO_EEPROM     }, /* Pete Sampras Tennis 96 */
-  {"XXXXXXXX" , 0          , 0xDF39 , mapper_i2c_jcart_init       , NO_EEPROM     }, /* Pete Sampras Tennis 96 (Prototype ?) */
-};
-
-static struct
-{
-  uint8 sda;              /* current SDA line state */
-  uint8 scl;              /* current SCL line state */
-  uint8 old_sda;          /* previous SDA line state */
-  uint8 old_scl;          /* previous SCL line state */
-  uint8 cycles;           /* operation internal cycle (0-9) */
-  uint8 rw;               /* operation type (1:READ, 0:WRITE) */
-  uint16 device_address;  /* device address */
-  uint16 word_address;    /* memory address */
-  uint8 buffer;           /* write buffer */
-  T_I2C_STATE state;      /* current operation state */
-  T_I2C_SPEC spec;        /* EEPROM characteristics */
-  uint8 scl_in_bit;       /* SCL (write) bit position */
-  uint8 sda_in_bit;       /* SDA (write) bit position */
-  uint8 sda_out_bit;      /* SDA (read) bit position */
-} eeprom_i2c;
-
+struct eeprom_i2c_t eeprom_i2c;
 
 /********************************************************************/
 /* I2C EEPROM mapper initialization                                 */
@@ -653,7 +520,7 @@ static void mapper_i2c_generic_write8(uint32 address, uint32 data)
   }
 }
 
-static void mapper_i2c_generic_write16(uint32 address, uint32 data)
+void mapper_i2c_generic_write16(uint32 address, uint32 data)
 {
   eeprom_i2c.sda = (data >> eeprom_i2c.sda_in_bit) & 1;
   eeprom_i2c.scl = (data >> eeprom_i2c.scl_in_bit) & 1;
@@ -665,7 +532,7 @@ static void mapper_i2c_generic_write16(uint32 address, uint32 data)
 /* EA mapper (PWA P10003 & P10004 boards)                           */
 /********************************************************************/
 
-static void mapper_i2c_ea_init(void)
+void mapper_i2c_ea_init(void)
 {
   int i;
 
@@ -692,7 +559,7 @@ static void mapper_i2c_ea_init(void)
 /* SEGA mapper (171-5878, 171-6111, 171-6304 & 171-6584 boards)     */
 /********************************************************************/
 
-static void mapper_i2c_sega_init(void)
+void mapper_i2c_sega_init(void)
 {
   int i;
 
@@ -719,7 +586,7 @@ static void mapper_i2c_sega_init(void)
 /* ACCLAIM 16M mapper (P/N 670120 board)                            */
 /********************************************************************/
 
-static void mapper_i2c_acclaim_16M_init(void)
+void mapper_i2c_acclaim_16M_init(void)
 {
   int i;
 
@@ -790,7 +657,7 @@ static void mapper_acclaim_32M_write16(uint32 address, uint32 data)
   }
 }
 
-static void mapper_i2c_acclaim_32M_init(void)
+void mapper_i2c_acclaim_32M_init(void)
 {
   int i;
 
@@ -832,7 +699,7 @@ static uint32 mapper_i2c_jcart_read16(uint32 address)
   return ((eeprom_i2c_out() << 7) | jcart_read(address));
 }
 
-static void mapper_i2c_jcart_init(void)
+void mapper_i2c_jcart_init(void)
 {
   int i;
 

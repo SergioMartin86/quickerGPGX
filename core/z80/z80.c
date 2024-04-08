@@ -483,18 +483,6 @@ FUNCTABLE(Z80ed,ed);
 FUNCTABLE(Z80fd,fd);
 FUNCTABLE(Z80xycb,xycb);
 
-/****************************************************************************/
-/* Burn an odd amount of cycles, that is instructions taking something    */
-/* different from 4 T-states per opcode (and R increment)          */
-/****************************************************************************/
-INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
-{
-  if( cycles > 0 )
-  {
-    R += (cycles / cyclesum) * opcodes;
-    USE_CYCLES((cycles / cyclesum) * cyclesum * 15);
-  }
-}
 
 /***************************************************************
  * define an opcode function

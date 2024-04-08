@@ -1629,3 +1629,19 @@ void cdd_process(void)
                                scd.regs[0x3e>>1].byte.h + scd.regs[0x3e>>1].byte.l +
                                scd.regs[0x40>>1].byte.h) & 0x0f;
 }
+
+void cdd_hotswap(const toc_t *toc)
+{
+	if (toc)
+	{
+		cdd.loaded = 1;
+		memcpy(&cdd.toc, toc, sizeof(cdd.toc));
+	}
+	else
+	{
+		cdd.loaded = 0;
+		memset(&cdd.toc, 0x00, sizeof(cdd.toc));
+	}
+
+	cdd_reset();
+}
