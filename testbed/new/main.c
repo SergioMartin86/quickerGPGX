@@ -624,6 +624,12 @@ void initialize ()
   SZHVC_add = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
   SZHVC_sub = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
 
+  // genesis.h
+
+  boot_rom = (uint8*) calloc(sizeof(uint8), 0x800);
+  work_ram = (uint8*) calloc(sizeof(uint8), 0x10000);
+  zram     = (uint8*) calloc(sizeof(uint8), 0x2000);
+
   /* set default config */
   set_config_defaults();
 

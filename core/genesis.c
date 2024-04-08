@@ -42,9 +42,9 @@
 #include "shared.h"
 
 external_t ext;
-uint8 boot_rom[0x800];    /* Genesis BOOT ROM   */
-uint8 work_ram[0x10000];  /* 68K RAM  */
-uint8 zram[0x2000];       /* Z80 RAM  */
+uint8* boot_rom;    /* Genesis BOOT ROM   */
+uint8* work_ram;  /* 68K RAM  */
+uint8* zram;       /* Z80 RAM  */
 uint32 zbank;             /* Z80 bank window address */
 uint8 zstate;             /* Z80 bus state (d0 = /RESET, d1 = BUSREQ, d2 = WAIT) */
 uint8 pico_current;       /* PICO current page */
@@ -248,8 +248,8 @@ void gen_reset(int hard_reset)
     m68k.cycles = ((lines_per_frame - 192 + 159 - (27 * vdp_pal)) * MCYCLES_PER_LINE) + 1004;
 
     /* clear RAM (on real hardware, RAM values are random / undetermined on Power ON) */
-    memset(work_ram, 0x00, sizeof (work_ram));
-    memset(zram, 0x00, sizeof (zram));
+    memset(work_ram, 0x00, 0x10000);
+    memset(zram, 0x00, 0x2000);
   }
   else
   {
@@ -339,7 +339,7 @@ void gen_reset(int hard_reset)
     if ((system_hw == SYSTEM_MARKIII) || ((system_hw & SYSTEM_SMS) && (region_code == REGION_JAPAN_NTSC)))
     {
       /* some korean games rely on RAM to be initialized with values different from $00 or $ff */
-      memset(work_ram, 0xf0, sizeof(work_ram));
+      memset(work_ram, 0xf0, 0x10000);
     }
 
     /* reset cartridge hardware */
