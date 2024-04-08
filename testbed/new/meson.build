@@ -12,7 +12,6 @@ newGPGXSrc =  [
    '../../core/sound/blip_buf.c',
    '../../core/sound/psg.c',
    '../../core/sound/ym2612.c',
-   '../../core/state.c',
    '../../core/membnk.c',
    '../../core/vdp_ctrl.c',
    '../../core/z80/z80.c',

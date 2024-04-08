@@ -1,7 +1,6 @@
 #include "SDL.h"
 #include "SDL_thread.h"
 
-#include <state.h>
 #include <shared.h>
 #include <osd.h>
 #include <ntsc/sms_ntsc.h>
@@ -447,32 +446,6 @@ struct {
         break;
       }
 
-      case SDLK_F7:
-      {
-        FILE *f = fopen("game.gp0","rb");
-        if (f)
-        {
-          uint8 buf[STATE_SIZE];
-          fread(&buf, STATE_SIZE, 1, f);
-          state_load(buf);
-          fclose(f);
-        }
-        break;
-      }
-
-      case SDLK_F8:
-      {
-        FILE *f = fopen("game.gp0","wb");
-        if (f)
-        {
-          uint8 buf[STATE_SIZE];
-          int len = state_save(buf);
-          fwrite(&buf, len, 1, f);
-          fclose(f);
-        }
-        break;
-      }
-
       case SDLK_F9:
       {
         config.region_detect = (config.region_detect + 1) % 5;
@@ -585,6 +558,10 @@ void initialize ()
   /**
    * Allocating large buffers
   */
+
+  // cart_hw/areplay.h
+
+  action_replay.ram = calloc(sizeof(uint8), 0x10000);
   
   // cart_hw/md_cart.h
 
@@ -625,6 +602,13 @@ void initialize ()
 
   // cd_hw/scd.h
 
+  // ext.cd_hw.bootrom     = (uint8*) calloc(sizeof(uint8), 0x20000);
+  // ext.cd_hw.prg_ram     = (uint8*) calloc(sizeof(uint8), 0x80000);
+  // ext.cd_hw.word_ram[0] = (uint8*) calloc(sizeof(uint8), 0x20000);
+  // ext.cd_hw.word_ram[1] = (uint8*) calloc(sizeof(uint8), 0x20000);
+  // ext.cd_hw.word_ram_2M = (uint8*) calloc(sizeof(uint8), 0x40000);
+  // ext.cd_hw.bram        = (uint8*) calloc(sizeof(uint8), 0x2000);
+  
 
   /* set default config */
   set_config_defaults();

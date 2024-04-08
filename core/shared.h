@@ -36,7 +36,6 @@
 #include "ggenie.h"
 #include "areplay.h"
 #include "svp.h"
-#include "state.h"
 
 #endif /* _SHARED_H_ */
 

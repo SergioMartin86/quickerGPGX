@@ -10,8 +10,6 @@
 
 extern "C"
 { 
- int state_load(unsigned char *state);
- int state_save(unsigned char *state);
  void initialize();
  void initializeVideoOutput();
  void finalizeVideoOutput();
@@ -67,23 +65,15 @@ class EmuInstance : public EmuInstanceBase
 
   void serializeState(jaffarCommon::serializer::Base& s) const override
   {
-    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
-    auto size = ::state_save(buffer);
-    s.push(buffer, size);
-    free (buffer);
   }
 
   void deserializeState(jaffarCommon::deserializer::Base& d) override
   {
-    ::state_load((unsigned char*)d.getInputDataBuffer());
   }
 
   size_t getStateSizeImpl() const override
   {
-    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
-    auto size = ::state_save(buffer);
-    free (buffer);
-    return size;
+    return 0;
   }
 
   void updateRenderer() override

@@ -43,6 +43,19 @@
 #define AR_SWITCH_ON      (1)
 #define AR_SWITCH_TRAINER (2)
 
+struct action_replay_t 
+{
+  uint8 enabled;
+  uint8 status;
+  uint8* ram;
+  uint16 regs[13];
+  uint16 old[4];
+  uint16 data[4];
+  uint32 addr[4];
+};
+
+extern struct action_replay_t action_replay;
+
 extern void areplay_init(void);
 extern void areplay_shutdown(void);
 extern void areplay_reset(int hard);
