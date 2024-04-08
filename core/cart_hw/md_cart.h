@@ -46,6 +46,8 @@
 
 #define cart ext.md_cart
 
+#define MAXROMSIZE (32*1024*1024)
+
 /* Lock-On cartridge type */
 #define TYPE_GG 0x01  /* Game Genie */
 #define TYPE_AR 0x02  /* (Pro) Action Replay */
@@ -84,8 +86,8 @@ typedef struct
   uint32 mask;            /* ROM mask */
   uint8 special;          /* custom external hardware (Lock-On, J-Cart, 3-D glasses, Terebi Oekaki,...) */
   cart_hw_t hw;           /* cartridge internal hardware */
-  uint8 lockrom[0x10000]; /* Game Genie / (Pro) Action Replay Lock-On ROM area (max 64KB) */
-  uint8 rom[MAXROMSIZE];  /* cartridge ROM area */
+  uint8* lockrom; /* Game Genie / (Pro) Action Replay Lock-On ROM area (max 64KB) */
+  uint8* rom;  /* cartridge ROM area */
 } md_cart_t;
 
 /* Function prototypes */

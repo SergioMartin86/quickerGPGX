@@ -51,10 +51,10 @@ typedef struct
   uint8 mapShift;                   /* stamp map table shift value (related to stamp map size) */
   uint16 bufferOffset;              /* image buffer column offset */
   uint32 bufferStart;               /* image buffer start index */
-  uint16 lut_offset[0x8000];        /* Cell Image -> WORD-RAM offset lookup table (1M Mode) */
-  uint8 lut_prio[4][0x100][0x100];  /* WORD-RAM data writes priority lookup table */
-  uint8 lut_pixel[0x200];           /* Graphics operation dot offset lookup table */
-  uint8 lut_cell[0x100];            /* Graphics operation stamp offset lookup table */
+  uint16* lut_offset;        /* Cell Image -> WORD-RAM offset lookup table (1M Mode) */
+  uint8** lut_prio[4];  /* WORD-RAM data writes priority lookup table */
+  uint8* lut_pixel;           /* Graphics operation dot offset lookup table */
+  uint8* lut_cell;            /* Graphics operation stamp offset lookup table */
 } gfx_t;
 
 

@@ -47,7 +47,7 @@ typedef struct
   uint32 start;
   uint32 end;
   uint32 crc;
-  uint8 sram[0x10000];
+  uint8* sram;
 } T_SRAM;
 
 /* Function prototypes */

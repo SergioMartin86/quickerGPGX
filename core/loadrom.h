@@ -40,10 +40,6 @@
 #ifndef _LOADROM_H_
 #define _LOADROM_H_
 
-#ifndef MAXROMSIZE
-#define MAXROMSIZE 10485760
-#endif
-
 typedef struct
 {
   char consoletype[18];         /* Genesis or Mega Drive */

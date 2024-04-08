@@ -58,7 +58,7 @@ typedef struct
   int cycles[2];
   void (*dma_w)(unsigned int length);  /* active DMA callback */
   void (*halted_dma_w)(unsigned int length);  /* halted DMA callback */
-  uint8 ram[0x4000 + 2352]; /* 16K external RAM (with one block overhead to handle buffer overrun) */
+  uint8* ram; /* 16K external RAM (with one block overhead to handle buffer overrun) */
   uint8 ar_mask;
   uint8 irq; /* invert of CDC /INT output */
 } cdc_t; 

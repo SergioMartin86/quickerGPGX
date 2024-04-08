@@ -582,6 +582,50 @@ void initialize ()
   int running = 1;
   bitmap.data = malloc(1024*1024*4);
 
+  /**
+   * Allocating large buffers
+  */
+  
+  // cart_hw/md_cart.h
+
+  ext.md_cart.lockrom = calloc(sizeof(uint8), 0x10000);
+  ext.md_cart.rom = calloc(sizeof(uint8), MAXROMSIZE);
+
+  // cart_hw/sram.h
+
+  sram.sram = calloc(sizeof(uint8), 0x10000);
+
+  // cd_hw/cd_cart.h
+
+  ext.cd_hw.cartridge.area = calloc(sizeof(uint8), 0x810000);
+
+  // cd_hw/cdc.h
+
+  memset(&cdc, 0, sizeof(cdc_t));
+  ext.cd_hw.cdc_hw.ram = calloc(sizeof(uint8), 0x4000 + 2352);
+  
+  // cd_hw/gfx.h
+
+  memset(&ext.cd_hw.gfx_hw, 0, sizeof(gfx_t));
+  ext.cd_hw.gfx_hw.lut_offset = (uint16*) calloc(sizeof(uint16), 0x8000);
+
+  for (size_t i = 0; i < 4; i++) 
+  {
+    ext.cd_hw.gfx_hw.lut_prio[i] = (uint8**) calloc (sizeof(uint8*), 0x100);
+    for (size_t j = 0; j < 0x100; j++)  ext.cd_hw.gfx_hw.lut_prio[i][j] = (uint8*) calloc (sizeof(uint8), 0x100);
+  }
+    
+  ext.cd_hw.gfx_hw.lut_pixel = (uint8*) calloc(sizeof(uint8), 0x200);
+  ext.cd_hw.gfx_hw.lut_cell = (uint8*) calloc(sizeof(uint8), 0x100);
+
+  // cd_hw/pcm.h
+
+  memset(&ext.cd_hw.pcm_hw, 0, sizeof(pcm_t));
+  ext.cd_hw.pcm_hw.ram = (uint8*) calloc(sizeof(uint8), 0x10000);
+
+  // cd_hw/scd.h
+
+
   /* set default config */
   set_config_defaults();
 

@@ -70,8 +70,6 @@
 
 void cdc_init(void)
 {
-  memset(&cdc, 0, sizeof(cdc_t));
-
   /* autodetect CDC configuration */
   if ((scd.type == CD_TYPE_WONDERMEGA_M2) || (scd.type == CD_TYPE_CDX))
   {
