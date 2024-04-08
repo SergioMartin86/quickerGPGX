@@ -64,6 +64,8 @@ struct {
 
  short soundframe[SOUND_SAMPLES_SIZE];
 
+int sdl_input_update(void);
+
 void osd_input_update(void)
 {
   sdl_input_update();
@@ -552,7 +554,6 @@ void initialize ()
   __tmpInput->dev[0] = 0;  
   __tmpInput->dev[1] = 255;
 
-  int running = 1;
   bitmap.data = malloc(1024*1024*4);
 
   /**
@@ -602,11 +603,11 @@ void initialize ()
 
   // cd_hw/scd.h
 
-  // ext.cd_hw.bootrom     = (uint8*) calloc(sizeof(uint8), 0x20000);
-  // ext.cd_hw.prg_ram     = (uint8*) calloc(sizeof(uint8), 0x80000);
-  // ext.cd_hw.word_ram[0] = (uint8*) calloc(sizeof(uint8), 0x20000);
-  // ext.cd_hw.word_ram[1] = (uint8*) calloc(sizeof(uint8), 0x20000);
-  // ext.cd_hw.word_ram_2M = (uint8*) calloc(sizeof(uint8), 0x40000);
+  ext.cd_hw.bootrom     = (uint8*) calloc(sizeof(uint8), 0x20000);
+  ext.cd_hw.prg_ram     = (uint8*) calloc(sizeof(uint8), 0x80000);
+  ext.cd_hw.word_ram[0] = (uint8*) calloc(sizeof(uint8), 0x20000);
+  ext.cd_hw.word_ram[1] = (uint8*) calloc(sizeof(uint8), 0x20000);
+  ext.cd_hw.word_ram_2M = (uint8*) calloc(sizeof(uint8), 0x40000);
   // ext.cd_hw.bram        = (uint8*) calloc(sizeof(uint8), 0x2000);
   
 
@@ -664,7 +665,7 @@ void initializeVideoOutput()
   if(SDL_Init(0) < 0)
   {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "SDL initialization failed", sdl_video.window);
-    return 1;
+    return;
   }
   sdl_video_init();
   if (use_sound) sdl_sound_init();
@@ -689,7 +690,7 @@ void initializeVideoOutput()
   bitmap.viewport.changed = 3;
 }
 
-void loadROM(const char* filePath)
+void loadROM(char* filePath)
 {
     FILE* fp;
 
@@ -699,7 +700,7 @@ void loadROM(const char* filePath)
       char caption[256];
       sprintf(caption, "Error loading file `%s'.", filePath);
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", caption, sdl_video.window);
-      return 1;
+      return;
     }
 
     /* initialize system hardware */

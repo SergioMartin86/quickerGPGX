@@ -43,6 +43,7 @@
 #include <zlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "unzip.h"
 
 static int check_zip(char *filename);

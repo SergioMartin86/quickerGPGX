@@ -74,6 +74,7 @@ newGPGXCompileArgs = [
    '-DUSE_32BPP_RENDERING',
    '-DHAVE_YM3438_CORE',
    '-DHAVE_OPLL_CORE',
+   '-Wno-unused-result'
 ]
 
 # newGPGX Core Configuration
