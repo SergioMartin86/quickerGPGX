@@ -119,12 +119,12 @@ typedef struct
 
 /* Function prototypes */
 extern void cdd_init(int samplerate);
-extern void cdd_reset(void);
 extern void cdd_update_audio(unsigned int samples);
 extern void cdd_update(void);
 extern void cdd_process(void);
 
 // Externally implemented functions
+extern void cdd_reset(void);
 extern int cdd_load(const char *filename, char *header);
 extern void cdd_unload(void);
 extern void cdd_read_data(uint8 *dst, uint8 *subheader);

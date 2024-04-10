@@ -357,12 +357,12 @@ void cdc_dma_update(unsigned int cycles)
   }
 }
 
-void cdc_decoder_update(uint32 header)
+int cdc_decoder_update(uint32 header)
 {
   /* data decoding enabled ? */
   if (cdc.ctrl[0] & BIT_DECEN)
   {
-    /* update HEADx registers with current block header */
+    /* update HEAD registers */
     *(uint32 *)(cdc.head[0]) = header;
 
     /* set !VALST */
@@ -371,31 +371,24 @@ void cdc_decoder_update(uint32 header)
     /* pending decoder interrupt */
     cdc.ifstat &= ~BIT_DECI;
 
-    /* update CDC decoder end cycle (value adjusted for MCD-verificator CDC FLAGS Tests #40 & #41) */
-    cdc.cycles[1] = s68k.cycles + 269000;
-
     /* decoder interrupt enabled ? */
     if (cdc.ifctrl & BIT_DECIEN)
     {
-      /* level 5 interrupt triggered only on CDC /INT falling edge with interrupt enabled on gate-array side */
-      /* note: only check DTEI as DECI is cleared automatically between decoder interrupt triggering */
-      if (!(cdc.irq & BIT_DTEI) && (scd.regs[0x32>>1].byte.l & 0x20))
-      {
-        /* pending level 5 interrupt */
-        scd.pending |= (1 << 5);
+      /* pending level 5 interrupt */
+      scd.pending |= (1 << 5);
 
+      /* level 5 interrupt enabled ? */
+      if (scd.regs[0x32>>1].byte.l & 0x20)
+      {
         /* update IRQ level */
         s68k_update_irq((scd.pending & scd.regs[0x32>>1].byte.l) >> 1);
       }
-
-      /* update CDC IRQ state */
-      cdc.irq |= BIT_DECI;
     }
 
     /* buffer RAM write enabled ? */
     if (cdc.ctrl[0] & BIT_WRRQ)
     {
-      int offset;
+      uint16 offset;
 
       /* increment block pointer  */
       cdc.pt.w += 2352;
@@ -406,53 +399,26 @@ void cdc_decoder_update(uint32 header)
       /* CDC buffer address */
       offset = cdc.pt.w & 0x3fff;
 
-      /* write current block header to RAM buffer (4 bytes) */
+      /* write CDD block header (4 bytes) */
       *(uint32 *)(cdc.ram + offset) = header;
-      offset += 4;
 
-      /* check decoded block mode */
-      if (cdc.head[0][3] == 0x01)
-      {
-        /* write Mode 1 user data to RAM buffer (2048 bytes) */
-        cdd_read_data(cdc.ram + offset, NULL);
-        offset += 2048;
-      }
-      else
-      {
-        /* check if CD-ROM Mode 2 decoding is enabled */
-        if (cdc.ctrl[1] & BIT_MODRQ)
-        {
-          /* update HEADx registers with current block sub-header & write Mode 2 user data to RAM buffer (max 2328 bytes) */
-          cdd_read_data(cdc.ram + offset + 8, cdc.head[1]);
-
-          /* write current block sub-header to RAM buffer (4 bytes x 2) */
-          *(uint32 *)(cdc.ram + offset) = *(uint32 *)(cdc.head[1]);
-          *(uint32 *)(cdc.ram + offset + 4) = *(uint32 *)(cdc.head[1]);
-          offset += 2336;
-        }
-        else
-        {
-          /* update HEADx registers with current block sub-header & write Mode 2 user data to RAM buffer (max 2328 bytes) */
-          /* NB: when Mode 2 decoding is disabled, sub-header is apparently not written to RAM buffer (required by Wonder Library) */
-          cdd_read_data(cdc.ram + offset, cdc.head[1]);
-          offset += 2328;
-        }
-
-        /* set STAT2 register FORM bit according to sub-header FORM bit when CTRL0 register AUTORQ bit is set */
-        if (cdc.ctrl[0] & BIT_AUTORQ)
-        {
-          cdc.stat[2] = (cdc.ctrl[1] & BIT_MODRQ) | ((cdc.head[1][2] & 0x20) >> 3);
-        }
-      }
+      /* write CDD block data (2048 bytes) */
+      cdd_read_data(cdc.ram + 4 + offset, NULL);
 
       /* take care of buffer overrun */
-      if (offset > 0x4000)
+      if (offset > (0x4000 - 2048 - 4))
       {
         /* data should be written at the start of buffer */
-        memcpy(cdc.ram, cdc.ram + 0x4000, offset - 0x4000);
+        memcpy(cdc.ram, cdc.ram + 0x4000, offset + 2048 + 4 - 0x4000);
       }
+
+      /* read next data block */
+      return 1;
     }
   }
+
+  /* keep decoding same data block if Buffer Write is disabled */
+  return 0;
 }
 
 void cdc_reg_w(unsigned char data)
