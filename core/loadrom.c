@@ -566,7 +566,7 @@ int load_rom(char *filename)
   }
 
   /* auto-detect CD image file */
-  size = cdd_load(filename, (char *)(cart.rom));
+  size = cdd_load("PRIMARY_CD", (char *)(cart.rom));
   if (size < 0)
   {
     /* error opening file */
@@ -583,7 +583,7 @@ int load_rom(char *filename)
   {
     /* load file into ROM buffer */
     char extension[4];
-    size = load_archive(filename, cart.rom, cdd.loaded ? 0x800000 : MAXROMSIZE, extension);
+    size = load_archive(filename, cart.rom, MAXROMSIZE, extension);
 
     /* mark BOOTROM as unloaded if they have been overwritten by cartridge ROM */
     if (size > 0x800000)
@@ -728,19 +728,6 @@ int load_rom(char *filename)
     int len;
     char fname[256];
 
-#if defined(USE_LIBCHDR)
-    /* automatically try to load associated .chd file if no .cue file CD image loaded yet */
-    if (!cdd.loaded)
-    {
-      len = strlen(filename);
-      while ((len && (filename[len] != '.')) || (len > 251)) len--;
-      strncpy(fname, filename, len);
-      strcpy(&fname[len], ".chd");
-      fname[len+4] = 0;
-      cdd_load(fname, (char *)cdc.ram);
-    }
-#endif
-
     /* automatically enable CD hardware emulation (Mode 1) in case :             */
     /*  - loaded ROM has known CD hardware support                               */
     /*      or                                                                   */
@@ -761,7 +748,7 @@ int load_rom(char *filename)
           strncpy(fname, filename, len);
           strcpy(&fname[len], ".iso");
           fname[len+4] = 0;
-          cdd_load(fname, (char *)cdc.ram);
+          cdd_load("SECONDARY_CD", (char *)cdc.ram);
         }
 
         /* enable CD hardware */
