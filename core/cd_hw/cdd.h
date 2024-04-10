@@ -59,10 +59,24 @@
 #define CD_TRAY       0x0E  /* unused */
 #define CD_TEST       0x0F  /* unusec */
 
+#define SUPPORTED_EXT 10
+
+/* CD blocks scanning speed */
+#define CD_SCAN_SPEED 30
+
+/* CD tracks type (CD-DA by default) */
+#define TYPE_AUDIO 0x00
+#define TYPE_MODE1 0x01
+#define TYPE_MODE2 0x02
+
+#define CD_MAX_TRACKS 100
+
+cdStream *trackStream[CD_MAX_TRACKS];
+cdStream *tocStream;
+
 /* CD track */
 typedef struct
 {
-  cdStream *fd;
   int offset;
   int start;
   int end;
@@ -77,7 +91,6 @@ typedef struct
   int end;
   int last;
   track_t tracks[100];
-  cdStream *sub;
 } toc_t; 
 
 /* CDD hardware */

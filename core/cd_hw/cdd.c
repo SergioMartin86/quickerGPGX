@@ -38,16 +38,6 @@
 #include "shared.h"
 #include "megasd.h"
 
-#define SUPPORTED_EXT 10
-
-/* CD blocks scanning speed */
-#define CD_SCAN_SPEED 30
-
-/* CD tracks type (CD-DA by default) */
-#define TYPE_AUDIO 0x00
-#define TYPE_MODE1 0x01
-#define TYPE_MODE2 0x02
-
 /* BCD conversion lookup tables */
 static const uint8 lut_BCD_8[100] =
 {
@@ -232,7 +222,7 @@ int cdd_load(char *filename, char *header)
       cdStreamRead(header + 0x10, 0x200, 1, fd);
 
       /* initialize first track file descriptor */
-      cdd.toc.tracks[0].fd = fd;
+      trackStream[0] = fd;
 
       /* DATA track end LBA (based on DATA file length) */
       cdStreamSeek(fd, 0, SEEK_END);
@@ -323,8 +313,8 @@ int cdd_load(char *filename, char *header)
         *ptr = 0;
 
         /* open current track file descriptor */
-        cdd.toc.tracks[cdd.toc.last].fd = cdStreamOpen(fname);
-        if (!cdd.toc.tracks[cdd.toc.last].fd)
+        trackStream[cdd.toc.last] = cdStreamOpen(fname);
+        if (!trackStream[cdd.toc.last])
         {
           /* error opening file */
           break;
@@ -341,33 +331,33 @@ int cdd_load(char *filename, char *header)
         {
           /* read file header */
           unsigned char head[12];
-          cdStreamRead(head, 12, 1, cdd.toc.tracks[cdd.toc.last].fd);
-          cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 0, SEEK_SET);
+          cdStreamRead(head, 12, 1, trackStream[cdd.toc.last]);
+          cdStreamSeek(trackStream[cdd.toc.last], 0, SEEK_SET);
 
           /* autodetect WAVE file */
           if (!memcmp(head, "RIFF", 4) && !memcmp(head + 8, "WAVE", 4))
           {
             /* look for 'data' chunk */
             int chunkSize, dataOffset = 0;
-            cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 12, SEEK_SET);
-            while (cdStreamRead(head, 8, 1, cdd.toc.tracks[cdd.toc.last].fd))
+            cdStreamSeek(trackStream[cdd.toc.last], 12, SEEK_SET);
+            while (cdStreamRead(head, 8, 1, trackStream[cdd.toc.last]))
             {
               if (!memcmp(head, "data", 4))
               {
-                dataOffset = cdStreamTell(cdd.toc.tracks[cdd.toc.last].fd);
-                cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 0, SEEK_SET);
+                dataOffset = cdStreamTell(trackStream[cdd.toc.last]);
+                cdStreamSeek(trackStream[cdd.toc.last], 0, SEEK_SET);
                 break;
               }
               chunkSize = head[4] + (head[5] << 8) + (head[6] << 16) + (head[7] << 24);
-              cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, chunkSize, SEEK_CUR);
+              cdStreamSeek(trackStream[cdd.toc.last], chunkSize, SEEK_CUR);
             }
 
             /* check if 'data' chunk has not been found */
             if (!dataOffset)
             {
               /* invalid WAVE file */
-              cdStreamClose(cdd.toc.tracks[cdd.toc.last].fd);
-              cdd.toc.tracks[cdd.toc.last].fd = 0;
+              cdStreamClose(trackStream[cdd.toc.last]);
+              trackStream[cdd.toc.last] = 0;
               break;
             }
 
@@ -377,8 +367,8 @@ int cdd_load(char *filename, char *header)
           else
           {
             /* unsupported audio file */
-            cdStreamClose(cdd.toc.tracks[cdd.toc.last].fd);
-            cdd.toc.tracks[cdd.toc.last].fd = 0;
+            cdStreamClose(trackStream[cdd.toc.last]);
+            trackStream[cdd.toc.last] = 0;
             break;
           }
         }
@@ -414,18 +404,18 @@ int cdd_load(char *filename, char *header)
             if (cdd.sectorSize == 2352)
             {
               /* skip 16-byte header */
-              cdStreamSeek(cdd.toc.tracks[0].fd, 0x10, SEEK_SET);
+              cdStreamSeek(trackStream[0], 0x10, SEEK_SET);
             }
 
             /* read CD image header + security code */
-            cdStreamRead(header, 0x210, 1, cdd.toc.tracks[0].fd);
-            cdStreamSeek(cdd.toc.tracks[0].fd, 0, SEEK_SET);
+            cdStreamRead(header, 0x210, 1, trackStream[0]);
+            cdStreamSeek(trackStream[0], 0, SEEK_SET);
           }
         }
         else
         {
           /* check if same file is used for consecutive tracks */
-          if (!cdd.toc.tracks[cdd.toc.last].fd)
+          if (!trackStream[cdd.toc.last])
           {
             /* clear previous track end time */
             cdd.toc.tracks[cdd.toc.last - 1].end = 0;
@@ -483,10 +473,10 @@ int cdd_load(char *filename, char *header)
         cdd.toc.tracks[cdd.toc.last].offset += pregap * 2352;
 
         /* check if a single file is used for consecutive tracks */
-        if (!cdd.toc.tracks[cdd.toc.last].fd && cdd.toc.last)
+        if (!trackStream[cdd.toc.last] && cdd.toc.last)
         {
           /* use common file descriptor */
-          cdd.toc.tracks[cdd.toc.last].fd = cdd.toc.tracks[cdd.toc.last - 1].fd;
+          trackStream[cdd.toc.last] = trackStream[cdd.toc.last - 1];
 
           /* current track start time (based on current file absolute time + PREGAP length) */
           cdd.toc.tracks[cdd.toc.last].start = bb + ss*75 + mm*60*75 + pregap;
@@ -508,18 +498,18 @@ int cdd_load(char *filename, char *header)
 
           {
             /* current track end time */
-            cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 0, SEEK_END);
+            cdStreamSeek(trackStream[cdd.toc.last], 0, SEEK_END);
             if (cdd.toc.tracks[cdd.toc.last].type)
             {
               /* DATA track length */
-              cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + (cdStreamTell(cdd.toc.tracks[cdd.toc.last].fd) / cdd.sectorSize);
+              cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + (cdStreamTell(trackStream[cdd.toc.last]) / cdd.sectorSize);
             }
             else
             {
               /* AUDIO track length */
-              cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + (cdStreamTell(cdd.toc.tracks[cdd.toc.last].fd) / 2352);
+              cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + (cdStreamTell(trackStream[cdd.toc.last]) / 2352);
             }
-            cdStreamSeek(cdd.toc.tracks[cdd.toc.last].fd, 0, SEEK_SET);
+            cdStreamSeek(trackStream[cdd.toc.last], 0, SEEK_SET);
           }
 
           /* adjust track start time (based on current file start time + index absolute time) */
@@ -548,9 +538,9 @@ int cdd_load(char *filename, char *header)
     }
 
     /* close any incomplete track file */
-    if (cdd.toc.tracks[cdd.toc.last].fd)
+    if (trackStream[cdd.toc.last])
     {
-      cdStreamClose(cdd.toc.tracks[cdd.toc.last].fd);
+      cdStreamClose(trackStream[cdd.toc.last]);
     }
 
     /* close CUE file */
@@ -615,7 +605,7 @@ int cdd_load(char *filename, char *header)
         }
 
         /* initialize current track file descriptor */
-        cdd.toc.tracks[cdd.toc.last].fd = fd;
+        trackStream[cdd.toc.last] = fd;
 
         /* initialize current track start time (based on previous track end time) */
         cdd.toc.tracks[cdd.toc.last].start = cdd.toc.end;
@@ -783,7 +773,7 @@ int cdd_load(char *filename, char *header)
 
     /* Automatically try to open associated subcode data file */
     memcpy(&fname[strlen(fname) - 4], ".sub", 4);
-    cdd.toc.sub = cdStreamOpen(fname);
+    tocStream = cdStreamOpen(fname);
 
     /* return 1 if loaded file is CD image file */
     return (isCDfile);
@@ -808,10 +798,10 @@ void cdd_unload(void)
     /* close CD tracks */
     for (i=0; i<cdd.toc.last; i++)
     {
-      if (cdd.toc.tracks[i].fd)
+      if (trackStream[i])
       {
         /* check if single file is used for consecutive tracks */
-        if ((i > 0) && (cdd.toc.tracks[i].fd == cdd.toc.tracks[i-1].fd))
+        if ((i > 0) && (trackStream[i] == trackStream[i-1]))
         {
           /* skip track */
           i++;
@@ -819,14 +809,14 @@ void cdd_unload(void)
         else
         {
           /* close file */
-          cdStreamClose(cdd.toc.tracks[i].fd);
+          cdStreamClose(trackStream[i]);
         }
       }
     }
 
     /* close any opened subcode file */
-    if (cdd.toc.sub)
-      cdStreamClose(cdd.toc.sub);
+    if (tocStream)
+      cdStreamClose(tocStream);
 
     /* CD unloaded */
     cdd.loaded = 0;
@@ -853,8 +843,8 @@ void cdd_read_data(uint8 *dst, uint8 *subheader)
     if (cdd.sectorSize == 2048)
     {
       /* read Mode 1 user data (2048 bytes) */
-      cdStreamSeek(cdd.toc.tracks[0].fd, cdd.lba * 2048, SEEK_SET);
-      cdStreamRead(dst, 2048, 1, cdd.toc.tracks[0].fd);
+      cdStreamSeek(trackStream[0], cdd.lba * 2048, SEEK_SET);
+      cdStreamRead(dst, 2048, 1, trackStream[0]);
     }
     else
     {
@@ -862,17 +852,17 @@ void cdd_read_data(uint8 *dst, uint8 *subheader)
       if (!subheader)
       {
         /* skip block sync pattern (12 bytes) + block header (4 bytes) then read Mode 1 user data (2048 bytes) */
-        cdStreamSeek(cdd.toc.tracks[0].fd, (cdd.lba * 2352) + 12 + 4, SEEK_SET);
-        cdStreamRead(dst, 2048, 1, cdd.toc.tracks[0].fd);
+        cdStreamSeek(trackStream[0], (cdd.lba * 2352) + 12 + 4, SEEK_SET);
+        cdStreamRead(dst, 2048, 1, trackStream[0]);
       }
       else
       {
         /* skip block sync pattern (12 bytes) + block header (4 bytes) + Mode 2 sub-header (first 4 bytes) then read Mode 2 sub-header (last 4 bytes) */
-        cdStreamSeek(cdd.toc.tracks[0].fd, (cdd.lba * 2352) + 12 + 4 + 4, SEEK_SET);
-        cdStreamRead(subheader, 4, 1, cdd.toc.tracks[0].fd);
+        cdStreamSeek(trackStream[0], (cdd.lba * 2352) + 12 + 4 + 4, SEEK_SET);
+        cdStreamRead(subheader, 4, 1, trackStream[0]);
 
         /* read Mode 2 user data (max 2328 bytes) */
-        cdStreamRead(dst, 2328, 1, cdd.toc.tracks[0].fd);
+        cdStreamRead(dst, 2328, 1, trackStream[0]);
       }
     }
   }
@@ -881,10 +871,10 @@ void cdd_read_data(uint8 *dst, uint8 *subheader)
 void cdd_seek_audio(int index, int lba)
 {
   /* seek to track position */
-  if (cdd.toc.tracks[index].fd)
+  if (trackStream[index])
   {
     /* PCM AUDIO track */
-    cdStreamSeek(cdd.toc.tracks[index].fd, (lba * 2352) - cdd.toc.tracks[index].offset, SEEK_SET);
+    cdStreamSeek(trackStream[index], (lba * 2352) - cdd.toc.tracks[index].offset, SEEK_SET);
   }
 }
 
@@ -895,7 +885,7 @@ void cdd_read_audio(unsigned int samples)
   int prev_r = cdd.audio[1];
 
   /* audio track playing ? */
-  if (!scd.regs[0x36>>1].byte.h && cdd.toc.tracks[cdd.index].fd)
+  if (!scd.regs[0x36>>1].byte.h && trackStream[cdd.index])
   {
     int i, mul, l, r;
 
@@ -912,7 +902,7 @@ void cdd_read_audio(unsigned int samples)
 #else
       uint8 *ptr = cdc.ram;
 #endif
-      cdStreamRead(cdc.ram, 1, samples * 4, cdd.toc.tracks[cdd.index].fd);
+      cdStreamRead(cdc.ram, 1, samples * 4, trackStream[cdd.index]);
 
       /* process 16-bit (little-endian) stereo samples */
       for (i=0; i<samples; i++)
@@ -1014,7 +1004,7 @@ static void cdd_read_subcode(void)
   index = (scd.regs[0x68>>1].byte.l + 0x100) >> 1;
 
   /* read interleaved subcode data from .sub file (12 x 8-bit of P subchannel first, then Q subchannel, etc) */
-  cdStreamRead(subc, 1, 96, cdd.toc.sub);
+  cdStreamRead(subc, 1, 96, tocStream);
 
   /* convert back to raw subcode format (96 bytes with 8 x P-W subchannel bits per byte) */
   for (i=0; i<96; i+=2)
@@ -1069,7 +1059,7 @@ void cdd_update(void)
     }
 
     /* subcode data processing */
-    if (cdd.toc.sub)
+    if (tocStream)
     {
       cdd_read_subcode();
     }
@@ -1175,9 +1165,9 @@ void cdd_update(void)
     }
 
     /* seek to current subcode position */
-    if (cdd.toc.sub)
+    if (tocStream)
     {
-      cdStreamSeek(cdd.toc.sub, cdd.lba * 96, SEEK_SET);
+      cdStreamSeek(tocStream, cdd.lba * 96, SEEK_SET);
     }
 
     /* current track is an audio track ? */
@@ -1429,9 +1419,9 @@ void cdd_process(void)
       cdd.index = index;
 
       /* seek to current subcode position */
-      if (cdd.toc.sub)
+      if (tocStream)
       {
-        cdStreamSeek(cdd.toc.sub, lba * 96, SEEK_SET);
+        cdStreamSeek(tocStream, lba * 96, SEEK_SET);
       }
 
       /* no audio track playing (yet) */
@@ -1496,9 +1486,9 @@ void cdd_process(void)
       cdd.index = index;
 
       /* seek to current subcode position */
-      if (cdd.toc.sub)
+      if (tocStream)
       {
-        cdStreamSeek(cdd.toc.sub, lba * 96, SEEK_SET);
+        cdStreamSeek(tocStream, lba * 96, SEEK_SET);
       }
 
       /* no audio track playing */
