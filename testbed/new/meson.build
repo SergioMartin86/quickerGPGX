@@ -4,6 +4,7 @@ newGPGXSrc =  [
    'main.c',
    'fileio.c',
    'unzip.c',
+   'cddImpl.c',
    '../../core/sound/sound.c',
    '../../core/sound/ym3438.c',
    '../../core/sound/opll.c',
