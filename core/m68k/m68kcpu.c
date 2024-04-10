@@ -23,6 +23,12 @@ extern int vdp_68k_irq_ack(int int_level);
 #ifdef USE_BIZHAWK_CALLBACKS
 #include <callbacks.h>
 #endif
+
+#ifdef USE_RAM_DEEPFREEZE
+int deepfreeze_list_size;
+struct deepfreeze_list_t deepfreeze_list[MAX_DEEP_FREEZE_ENTRIES];
+#endif
+
 /* ======================================================================== */
 /* ================================= DATA ================================= */
 /* ======================================================================== */
