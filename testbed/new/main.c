@@ -741,7 +741,7 @@ void loadROM(char* filePath)
     FILE* fp;
 
     /* Load game file */
-    if(!load_rom(filePath))
+    if(!load_rom(filePath, filePath, filePath))
     {
       char caption[256];
       sprintf(caption, "Error loading file `%s'.", filePath);
@@ -938,7 +938,7 @@ int oldMain (int argc, char **argv)
   bitmap.viewport.changed = 3;
 
   /* Load game file */
-  if(!load_rom(argv[1]))
+  if(!load_rom(argv[1], argv[1], argv[1]))
   {
     char caption[256];
     sprintf(caption, "Error loading file `%s'.", argv[1]);

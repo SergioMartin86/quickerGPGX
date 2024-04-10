@@ -550,7 +550,7 @@ int load_bios(int system)
  * Return 0 on error, 1 on success
  *
  ***************************************************************************/
-int load_rom(char *filename)
+int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD)
 {
   int i, size;
 
@@ -566,7 +566,7 @@ int load_rom(char *filename)
   }
 
   /* auto-detect CD image file */
-  size = cdd_load("PRIMARY_CD", (char *)(cart.rom));
+  size = cdd_load(primaryCD, (char *)(cart.rom));
   if (size < 0)
   {
     /* error opening file */
@@ -583,7 +583,7 @@ int load_rom(char *filename)
   {
     /* load file into ROM buffer */
     char extension[4];
-    size = load_archive(filename, cart.rom, MAXROMSIZE, extension);
+    size = load_archive(romFile, cart.rom, MAXROMSIZE, extension);
 
     /* mark BOOTROM as unloaded if they have been overwritten by cartridge ROM */
     if (size > 0x800000)
@@ -743,12 +743,12 @@ int load_rom(char *filename)
         /* automatically try to load associated .iso file if no CD image loaded yet */
         if (!cdd.loaded)
         {
-          len = strlen(filename);
-          while ((len && (filename[len] != '.')) || (len > 251)) len--;
-          strncpy(fname, filename, len);
+          len = strlen(secondaryCD);
+          while ((len && (secondaryCD[len] != '.')) || (len > 251)) len--;
+          strncpy(fname, secondaryCD, len);
           strcpy(&fname[len], ".iso");
           fname[len+4] = 0;
-          cdd_load("SECONDARY_CD", (char *)cdc.ram);
+          cdd_load(secondaryCD, (char *)cdc.ram);
         }
 
         /* enable CD hardware */

@@ -71,13 +71,13 @@
 
 #define CD_MAX_TRACKS 100
 
-cdStream *trackStream[CD_MAX_TRACKS];
-cdStream *tocStream;
+extern cdStream *trackStream[CD_MAX_TRACKS];
+extern int trackOffset[CD_MAX_TRACKS];
+extern cdStream *tocStream;
 
 /* CD track */
 typedef struct
 {
-  int offset;
   int start;
   int end;
   int type;

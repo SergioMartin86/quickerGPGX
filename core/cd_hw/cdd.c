@@ -38,6 +38,10 @@
 #include "shared.h"
 #include "megasd.h"
 
+cdStream *trackStream[CD_MAX_TRACKS];
+int trackOffset[CD_MAX_TRACKS];
+cdStream *tocStream;
+
 /* BCD conversion lookup tables */
 static const uint8 lut_BCD_8[100] =
 {
@@ -324,7 +328,7 @@ int cdd_load(char *filename, char *header)
         pregap = 0;
 
         /* reset current track file read offset */
-        cdd.toc.tracks[cdd.toc.last].offset = 0;
+        trackOffset[cdd.toc.last] = 0;
 
         /* check supported audio file types */
         if (!strstr(lptr,"BINARY") && !strstr(lptr,"MOTOROLA"))
@@ -362,7 +366,7 @@ int cdd_load(char *filename, char *header)
             }
 
             /* adjust current track file read offset with WAVE header length */
-            cdd.toc.tracks[cdd.toc.last].offset -= dataOffset;
+            trackOffset[cdd.toc.last] -= dataOffset;
           }
           else
           {
@@ -470,7 +474,7 @@ int cdd_load(char *filename, char *header)
                (sscanf(lptr, "INDEX 1 %02d:%02d:%02d", &mm, &ss, &bb) == 3))
       {
         /* adjust current track file read offset with current file PREGAP length (only used for AUDIO track) */
-        cdd.toc.tracks[cdd.toc.last].offset += pregap * 2352;
+        trackOffset[cdd.toc.last] += pregap * 2352;
 
         /* check if a single file is used for consecutive tracks */
         if (!trackStream[cdd.toc.last] && cdd.toc.last)
@@ -494,7 +498,7 @@ int cdd_load(char *filename, char *header)
           cdd.toc.tracks[cdd.toc.last].start = cdd.toc.end + pregap;
 
           /* adjust current track file read offset with previous track end time (only used for AUDIO track) */
-          cdd.toc.tracks[cdd.toc.last].offset += cdd.toc.end * 2352;
+          trackOffset[cdd.toc.last] += cdd.toc.end * 2352;
 
           {
             /* current track end time */
@@ -618,7 +622,7 @@ int cdd_load(char *filename, char *header)
         cdd.toc.tracks[cdd.toc.last].end = cdd.toc.tracks[cdd.toc.last].start + ((cdStreamTell(fd) - dataOffset + 2351) / 2352);
 
         /* initialize file read offset for current track */
-        cdd.toc.tracks[cdd.toc.last].offset = cdd.toc.tracks[cdd.toc.last].start * 2352;
+        trackOffset[cdd.toc.last] = cdd.toc.tracks[cdd.toc.last].start * 2352;
 
         /* auto-detect PAUSE within audio files */
         cdStreamSeek(fd, 100 * 2352, SEEK_SET);
@@ -627,7 +631,7 @@ int cdd_load(char *filename, char *header)
         if (*(int32 *)head == 0)
         {
           /* assume 2s PAUSE is included at the beginning of the file */
-          cdd.toc.tracks[cdd.toc.last].offset -= 150 * 2352;
+          trackOffset[cdd.toc.last] -= 150 * 2352;
           cdd.toc.tracks[cdd.toc.last].end -= 150;
         }
 
@@ -635,7 +639,7 @@ int cdd_load(char *filename, char *header)
         cdd.toc.end = cdd.toc.tracks[cdd.toc.last].end;
 
         /* adjust file read offset for current track with WAVE header length */
-        cdd.toc.tracks[cdd.toc.last].offset -= dataOffset;
+        trackOffset[cdd.toc.last] -= dataOffset;
 
         /* increment track number */
         cdd.toc.last++;
@@ -874,7 +878,7 @@ void cdd_seek_audio(int index, int lba)
   if (trackStream[index])
   {
     /* PCM AUDIO track */
-    cdStreamSeek(trackStream[index], (lba * 2352) - cdd.toc.tracks[index].offset, SEEK_SET);
+    cdStreamSeek(trackStream[index], (lba * 2352) - trackOffset[index], SEEK_SET);
   }
 }
 
