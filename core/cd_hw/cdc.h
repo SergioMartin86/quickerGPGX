@@ -74,5 +74,6 @@ extern int cdc_decoder_update(uint32 header);
 extern void cdc_reg_w(unsigned char data);
 extern unsigned char cdc_reg_r(void);
 extern unsigned short cdc_host_r(uint8 cpu_access);
+void cdd_read_subcode(void);
 
 #endif

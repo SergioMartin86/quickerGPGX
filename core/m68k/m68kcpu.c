@@ -18,7 +18,11 @@ extern int vdp_68k_irq_ack(int int_level);
 #include "m68kconf.h"
 #include "m68kcpu.h"
 #include "m68kops.h"
+#include "../shared.h"
 
+#ifdef USE_BIZHAWK_CALLBACKS
+#include <callbacks.h>
+#endif
 /* ======================================================================== */
 /* ================================= DATA ================================= */
 /* ======================================================================== */
@@ -254,6 +258,52 @@ void m68k_set_irq_delay(unsigned int int_level)
   m68ki_check_interrupts(); /* Level triggered (IRQ) */
 }
 
+#ifdef USE_BIZHAWK_CALLBACKS
+void CDLog68k(uint addr, uint flags)
+{
+	addr &= 0x00FFFFFF;
+
+	//check for sram region first
+	if(sram.on)
+	{
+		if(addr >= sram.start && addr <= sram.end)
+		{
+			biz_cdcallback(addr - sram.start, eCDLog_AddrType_SRAM, flags);
+			return;
+		}
+	}
+
+	if(addr < 0x400000)
+	{
+		uint block64k_rom;
+
+		//apply memory map to process rom address
+		unsigned char* block64k = m68ki_cpu.memory_map[((addr)>>16)&0xff].base;
+		
+		//outside the ROM range. complex mapping logic/accessories; not sure how to handle any of this
+		if(block64k < cart.rom || block64k >= cart.rom + cart.romsize)
+			return;
+
+		block64k_rom = block64k - cart.rom;
+		addr = ((addr) & 0xffff) + block64k_rom;
+
+		//outside the ROM range somehow
+		if(addr >= cart.romsize)
+			return;
+
+		biz_cdcallback(addr, eCDLog_AddrType_MDCART, flags);
+		return;
+	}
+
+	if(addr > 0xFF0000)
+	{
+		//no memory map needed
+		biz_cdcallback(addr & 0xFFFF, eCDLog_AddrType_RAM68k, flags);
+		return;
+	}
+}
+#endif
+
 void m68k_run(unsigned int cycles) 
 {
   /* Make sure CPU is not already ahead */
@@ -289,6 +339,20 @@ void m68k_run(unsigned int cycles)
 
     /* Set the address space for reads */
     m68ki_use_data_space() /* auto-disable (see m68kcpu.h) */
+
+    #ifdef USE_BIZHAWK_CALLBACKS
+
+    if (biz_execcb) biz_execcb(REG_PC);
+
+    if(biz_cdcallback)
+    {
+      CDLog68k(REG_PC,eCDLog_Flags_Exec68k);
+      CDLog68k(REG_PC+1,eCDLog_Flags_Exec68k);
+    }
+
+    biz_lastpc = REG_PC;
+
+    #endif
 
 #ifdef HOOK_CPU
     /* Trigger execution hook */
