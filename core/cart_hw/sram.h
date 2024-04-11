@@ -59,7 +59,7 @@ extern void sram_write_word(unsigned int address, unsigned int data);
 
 /* global variables */
 extern T_SRAM sram;
-
+extern int force_sram;
 extern int sram_get_actual_size();
 
 #endif

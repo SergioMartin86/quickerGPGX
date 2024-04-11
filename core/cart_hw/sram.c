@@ -41,7 +41,7 @@
 #include "../scrc32.h"
 
 T_SRAM sram;
-extern int cinterface_force_sram;
+int force_sram = 0;
 
 /****************************************************************************
  * A quick guide to external RAM on the Genesis
@@ -211,7 +211,7 @@ void sram_init(void)
       /* this prevents backup RAM from being mapped in place of mirrored ROM when using S&K LOCK-ON feature */
       sram.on = 0;
     }
-    else if (cinterface_force_sram && cart.romsize <= 0x200000)
+    else if (force_sram && cart.romsize <= 0x200000)
     {
       // by default, gpgx enables saveram for all rom no bigger than 2MB
 	  // we don't do that because it confuses ram searches and debugging, and adds extra baggage to savestates
