@@ -54,7 +54,7 @@
 
 #ifdef USE_RAM_DEEPFREEZE
 
-#define MAX_DEEP_FREEZE_ENTRIES 255
+#define MAX_DEEP_FREEZE_ENTRIES 1024
 
 struct deepfreeze_list_t 
 {
