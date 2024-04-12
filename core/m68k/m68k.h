@@ -64,6 +64,7 @@ struct deepfreeze_list_t
 
 extern int deepfreeze_list_size;
 extern struct deepfreeze_list_t deepfreeze_list[MAX_DEEP_FREEZE_ENTRIES];
+
 #endif
 
 
