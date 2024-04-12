@@ -64,8 +64,8 @@
 #define HBLANK_H40_END_MCYCLE   (872)
 
 /* VDP context */
-uint8* sat;     /* Internal copy of sprite attribute table */
-uint8* vram;  /* Video RAM (64K x 8-bit) */
+uint8 ALIGNED_(4) sat[0x400];     /* Internal copy of sprite attribute table */
+uint8 ALIGNED_(4) vram[0x10000];  /* Video RAM (64K x 8-bit) */
 uint8 ALIGNED_(4) cram[0x80];     /* On-chip color RAM (64 x 9-bit) */
 uint8 ALIGNED_(4) vsram[0x80];    /* On-chip vertical scroll RAM (40 x 11-bit) */
 uint8 reg[0x20];                  /* Internal VDP registers (23 x 8-bit) */
@@ -82,8 +82,8 @@ uint16 ntbb;                      /* Name table B base address */
 uint16 ntwb;                      /* Name table W base address */
 uint16 satb;                      /* Sprite attribute table base address */
 uint16 hscb;                      /* Horizontal scroll table base address */
-uint8* bg_name_dirty;       /* 1= This pattern is dirty */
-uint16* bg_name_list;       /* List of modified pattern indices */
+uint8 bg_name_dirty[0x800];       /* 1= This pattern is dirty */
+uint16 bg_name_list[0x800];       /* List of modified pattern indices */
 uint16 bg_list_index;             /* # of modified patterns in list */
 uint8 hscroll_mask;               /* Horizontal Scrolling line mask */
 uint8 playfield_shift;            /* Width of planes A, B (in bits) */
@@ -3098,6 +3098,7 @@ static void vdp_dma_fill(unsigned int length)
     }
   }
 }
+
 
 void write_cram_byte(int addr, uint8 val)
 {

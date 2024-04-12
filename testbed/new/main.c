@@ -558,104 +558,14 @@ void initialize ()
    * Allocating large buffers
   */
 
-  // cart_hw/areplay.h
-
-  action_replay.ram = calloc(sizeof(uint8), 0x10000);
-  
-  // cart_hw/md_cart.h
-
-  ext.md_cart.lockrom = calloc(sizeof(uint8), 0x10000);
-  ext.md_cart.rom = calloc(sizeof(uint8), MAXROMSIZE);
-
-  // cart_hw/sram.h
-
-  sram.sram = calloc(sizeof(uint8), 0x10000);
-
   // cd_hw/cd_cart.h
 
   ext.cd_hw.cartridge.area = calloc(sizeof(uint8), 0x810000);
-
-  // cd_hw/cdc.h
-
-  memset(&cdc, 0, sizeof(cdc_t));
-  ext.cd_hw.cdc_hw.ram = calloc(sizeof(uint8), 0x4000 + 2352);
-  
-  // cd_hw/gfx.h
-
-  memset(&ext.cd_hw.gfx_hw, 0, sizeof(gfx_t));
-  ext.cd_hw.gfx_hw.lut_offset = (uint16*) calloc(sizeof(uint16), 0x8000);
-
-  for (size_t i = 0; i < 4; i++) 
-  {
-    ext.cd_hw.gfx_hw.lut_prio[i] = (uint8**) calloc (sizeof(uint8*), 0x100);
-    for (size_t j = 0; j < 0x100; j++)  ext.cd_hw.gfx_hw.lut_prio[i][j] = (uint8*) calloc (sizeof(uint8), 0x100);
-  }
-    
-  ext.cd_hw.gfx_hw.lut_pixel = (uint8*) calloc(sizeof(uint8), 0x200);
-  ext.cd_hw.gfx_hw.lut_cell  = (uint8*) calloc(sizeof(uint8), 0x100);
-
-  // cd_hw/pcm.h
-
-  memset(&ext.cd_hw.pcm_hw, 0, sizeof(pcm_t));
-  ext.cd_hw.pcm_hw.ram = (uint8*) calloc(sizeof(uint8), 0x10000);
-
-  // cd_hw/scd.h
-
-  ext.cd_hw.bootrom     = (uint8*) calloc(sizeof(uint8), 0x20000);
-  ext.cd_hw.prg_ram     = (uint8*) calloc(sizeof(uint8), 0x80000);
-  ext.cd_hw.word_ram[0] = (uint8*) calloc(sizeof(uint8), 0x20000);
-  ext.cd_hw.word_ram[1] = (uint8*) calloc(sizeof(uint8), 0x20000);
-  ext.cd_hw.word_ram_2M = (uint8*) calloc(sizeof(uint8), 0x40000);
-  ext.cd_hw.bram        = (uint8*) calloc(sizeof(uint8), 0x2000);
-  
-  // sound.h
-
-  fm_buffer = (int*) calloc(sizeof(int), 1080 * 2 * 48);
-
-  // z80.h
-
-  SZ        = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZ_BIT    = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZP       = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZHV_inc  = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZHV_dec  = (UINT8* ) calloc(sizeof(UINT8), 256);
-  SZHVC_add = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
-  SZHVC_sub = (UINT8* ) calloc(sizeof(UINT8), 2*256*256);
-
-  // genesis.h
-
-  boot_rom = (uint8*) calloc(sizeof(uint8), 0x800);
-  work_ram = (uint8*) calloc(sizeof(uint8), 0x10000);
-  zram     = (uint8*) calloc(sizeof(uint8), 0x2000);
 
   // system.h
 
   bitmap.data = (uint8_t*) calloc(sizeof(uint8_t), 1024*1024*4);
 
-  // vdp_ctrl.h
-
-  sat  = (uint8*) calloc (sizeof(uint8), 0x400);
-  vram = (uint8*) calloc (sizeof(uint8), 0x10000);
-  bg_name_dirty = (uint8 *) calloc (sizeof(uint8 ), 0x800);
-  bg_name_list  = (uint16*) calloc (sizeof(uint16), 0x800);
-  // vdp_render.h
-
-  bg_pattern_cache = (uint8      *) calloc (sizeof(uint8      ), 0x80000);
-  name_lut         = (uint8      *) calloc (sizeof(uint8      ), 0x400);
-  bp_lut           = (uint32     *) calloc (sizeof(uint32     ), 0x10000);
-  lut[0]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  lut[1]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  lut[2]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  lut[3]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  lut[4]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  lut[5]           = (uint8      *) calloc (sizeof(uint8      ), LUT_SIZE);
-  pixel            = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x100);
-  pixel_lut[0]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
-  pixel_lut[1]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
-  pixel_lut[2]     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x200);
-  pixel_lut_m4     = (PIXEL_OUT_T*) calloc (sizeof(PIXEL_OUT_T), 0x40);
-  linebuf[0]       = (uint8      *) calloc (sizeof(uint8      ), 0x200);
-  linebuf[1]       = (uint8      *) calloc (sizeof(uint8      ), 0x200);
 
   /* set default config */
   set_config_defaults();

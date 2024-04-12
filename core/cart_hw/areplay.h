@@ -47,7 +47,7 @@ struct action_replay_t
 {
   uint8 enabled;
   uint8 status;
-  uint8* ram;
+  uint8 ram[0x10000];
   uint16 regs[13];
   uint16 old[4];
   uint16 data[4];

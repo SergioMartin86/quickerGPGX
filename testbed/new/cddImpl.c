@@ -857,8 +857,6 @@ void cdd_update(void)
 
 void cdd_read_data(uint8 *dst, uint8 *subheader)
 {
-	printf("Reading data\n");
-
   /* only allow reading (first) CD-ROM track sectors */
   if (cdd.toc.tracks[cdd.index].type && (cdd.lba >= 0))
   {

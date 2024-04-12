@@ -60,7 +60,7 @@ typedef struct
   uint8 enabled;      /* PCM chip ON/OFF status */
   uint8 status;       /* channels ON/OFF status */
   uint8 index;        /* current channel index */
-  uint8* ram; /* 64k external RAM */
+  uint8 ram[0x10000]; /* 64k external RAM */
   uint32 cycles;
 } pcm_t;
 

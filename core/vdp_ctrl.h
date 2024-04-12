@@ -44,8 +44,8 @@
 
 /* VDP context */
 extern uint8 reg[0x20];
-extern uint8* sat;
-extern uint8* vram;
+extern uint8 sat[0x400];
+extern uint8 vram[0x10000];
 extern uint8 cram[0x80];
 extern uint8 vsram[0x80];
 extern uint8 hint_pending;
@@ -61,8 +61,8 @@ extern uint16 ntbb;
 extern uint16 ntwb;
 extern uint16 satb;
 extern uint16 hscb;
-extern uint8* bg_name_dirty;
-extern uint16* bg_name_list;
+extern uint8 bg_name_dirty[0x800];
+extern uint16 bg_name_list[0x800];
 extern uint16 bg_list_index;
 extern uint8 hscroll_mask;
 extern uint8 playfield_shift;

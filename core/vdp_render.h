@@ -43,17 +43,41 @@
 #ifndef _RENDER_H_
 #define _RENDER_H_
 
-/* Output pixels type*/
-#define PIXEL_OUT_T uint32
+/* 3:3:2 RGB */
+#if defined(USE_8BPP_RENDERING)
+#define PIXEL(r,g,b) (((r) << 5) | ((g) << 2) | (b))
+#define GET_R(pixel) (((pixel) & 0xe0) >> 5)
+#define GET_G(pixel) (((pixel) & 0x1c) >> 2)
+#define GET_B(pixel) (((pixel) & 0x03) >> 0)
 
-/* Pixel priority look-up tables information */
-#define LUT_MAX     (6)
-#define LUT_SIZE    (0x10000)
+/* 5:5:5 RGB */
+#elif defined(USE_15BPP_RENDERING)
+#if defined(USE_ABGR)
+#define PIXEL(r,g,b) ((1 << 15) | ((b) << 10) | ((g) << 5) | (r))
+#define GET_B(pixel) (((pixel) & 0x7c00) >> 10)
+#define GET_G(pixel) (((pixel) & 0x03e0) >> 5)
+#define GET_R(pixel) (((pixel) & 0x001f) >> 0)
+#else
+#define PIXEL(r,g,b) ((1 << 15) | ((r) << 10) | ((g) << 5) | (b))
+#define GET_R(pixel) (((pixel) & 0x7c00) >> 10)
+#define GET_G(pixel) (((pixel) & 0x03e0) >> 5)
+#define GET_B(pixel) (((pixel) & 0x001f) >> 0)
+#endif
 
+/* 5:6:5 RGB */
+#elif defined(USE_16BPP_RENDERING)
+#define PIXEL(r,g,b) (((r) << 11) | ((g) << 5) | (b))
+#define GET_R(pixel) (((pixel) & 0xf800) >> 11)
+#define GET_G(pixel) (((pixel) & 0x07e0) >> 5)
+#define GET_B(pixel) (((pixel) & 0x001f) >> 0)
+
+/* 8:8:8 RGB */
+#elif defined(USE_32BPP_RENDERING)
 #define PIXEL(r,g,b) ((0xff << 24) | ((r) << 16) | ((g) << 8) | (b))
 #define GET_R(pixel) (((pixel) & 0xff0000) >> 16)
 #define GET_G(pixel) (((pixel) & 0x00ff00) >> 8)
 #define GET_B(pixel) (((pixel) & 0x0000ff) >> 0)
+#endif
 
 /* LCD image persistence (ghosting) filter */
 /* Simulates (roughly) the slow decay response time of passive-matrix LCD */
@@ -74,15 +98,6 @@
   if (b_decay > 0) b += (rate * b_decay) >> 8; \
   *out++ = PIXEL(r,g,b); \
 }
-
-extern uint8* bg_pattern_cache;
-extern uint8* name_lut;
-extern uint32* bp_lut;
-extern uint8* lut[LUT_MAX];
-extern PIXEL_OUT_T* pixel;
-extern PIXEL_OUT_T* pixel_lut[3];
-extern PIXEL_OUT_T* pixel_lut_m4;
-extern uint8* linebuf[2];
 
 /* Global variables */
 extern uint16 spr_col;

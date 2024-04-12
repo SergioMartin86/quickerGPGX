@@ -40,7 +40,7 @@
 #ifndef _SOUND_H_
 #define _SOUND_H_
 
-extern int* fm_buffer;
+extern int fm_buffer[1080 * 2 * 48];
 
 /* Function prototypes */
 extern void sound_init(void);
