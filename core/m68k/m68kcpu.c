@@ -346,20 +346,6 @@ void m68k_run(unsigned int cycles)
     /* Set the address space for reads */
     m68ki_use_data_space() /* auto-disable (see m68kcpu.h) */
 
-    #ifdef USE_BIZHAWK_CALLBACKS
-
-    if (biz_execcb) biz_execcb(REG_PC);
-
-    if(biz_cdcallback)
-    {
-      CDLog68k(REG_PC,eCDLog_Flags_Exec68k);
-      CDLog68k(REG_PC+1,eCDLog_Flags_Exec68k);
-    }
-
-    biz_lastpc = REG_PC;
-
-    #endif
-
 #ifdef HOOK_CPU
     /* Trigger execution hook */
     if (cpu_hook)
