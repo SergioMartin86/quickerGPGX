@@ -116,6 +116,9 @@ void set_config_defaults(void)
   config.enhanced_vscroll = 0;
   config.enhanced_vscroll_limit = 8;
 
+  config.sprites_always_on_top = 0;
+  config.no_sprite_limit = 0;
+
   /* controllers options */
   input.system[0]       = SYSTEM_GAMEPAD;
   input.system[1]       = SYSTEM_GAMEPAD;

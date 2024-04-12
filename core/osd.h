@@ -75,6 +75,7 @@ struct config_t
   uint8_t enhanced_vscroll_limit;
   t_input_config input[MAX_INPUTS];
   uint8_t no_sprite_limit;
+  uint8_t sprites_always_on_top;
 };
 
 extern struct config_t config;
