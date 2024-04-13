@@ -425,6 +425,7 @@ INLINE void WRITE_LONG(void *address, uint32 data)
     if (temp & 0x0f) \
     { \
       temp |= (lb[i] << 8); \
+	  if (config.sprites_always_on_top) ATTR |= 0b01000000; \
       lb[i] = TABLE[temp | ATTR]; \
       status |= ((temp & 0x8000) >> 10); \
     } \
