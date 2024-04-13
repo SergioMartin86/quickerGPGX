@@ -56,6 +56,7 @@ static struct
 
 static uint8 latch;
 
+
 void gamepad_reset(int port)
 {
   /* default state (Gouketsuji Ichizoku / Power Instinct, Samurai Spirits / Samurai Shodown) */
