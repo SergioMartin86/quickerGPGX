@@ -41,7 +41,16 @@
 #define TYPE_PRO1 0x12
 #define TYPE_PRO2 0x22
 
-struct action_replay_t action_replay;
+static struct
+{
+  uint8 enabled;
+  uint8 status;
+  uint8 ram[0x10000];
+  uint16 regs[13];
+  uint16 old[4];
+  uint16 data[4];
+  uint32 addr[4];
+} action_replay;
 
 static void ar_write_regs(uint32 address, uint32 data);
 static void ar2_write_reg(uint32 address, uint32 data);
