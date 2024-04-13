@@ -48,6 +48,7 @@ typedef struct
   int    (*irq_callback)(int irqline);
 }  Z80_Regs;
 
+
 extern Z80_Regs Z80;
 extern UINT8 z80_last_fetch;
 

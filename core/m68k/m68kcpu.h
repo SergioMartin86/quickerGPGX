@@ -921,9 +921,9 @@ INLINE void m68ki_write_8(uint address, uint value)
   if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);
   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
 
-  #ifdef USE_RAM_DEEPFREEZE
-   for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
-  #endif
+#ifdef USE_RAM_DEEPFREEZE
+  for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
+#endif
 }
 
 INLINE void m68ki_write_16(uint address, uint value)
@@ -942,9 +942,9 @@ INLINE void m68ki_write_16(uint address, uint value)
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
   else *(uint16 *)(temp->base + ((address) & 0xffff)) = value;
 
-  #ifdef USE_RAM_DEEPFREEZE
-   for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
-  #endif
+#ifdef USE_RAM_DEEPFREEZE
+  for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
+#endif
 }
 
 INLINE void m68ki_write_32(uint address, uint value)
@@ -967,9 +967,9 @@ INLINE void m68ki_write_32(uint address, uint value)
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
   else *(uint16 *)(temp->base + ((address + 2) & 0xffff)) = value;
 
-  #ifdef USE_RAM_DEEPFREEZE
-   for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
-  #endif
+#ifdef USE_RAM_DEEPFREEZE
+  for (size_t i = 0; i < deepfreeze_list_size; i++) work_ram[deepfreeze_list[i].address] = deepfreeze_list[i].value;
+#endif
 }
 
 

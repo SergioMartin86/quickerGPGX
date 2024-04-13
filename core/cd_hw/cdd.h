@@ -70,7 +70,11 @@
 #define CD_TRAY       0x0E  /* unused */
 #define CD_TEST       0x0F  /* unusec */
 
+#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
+#define SUPPORTED_EXT 20
+#else
 #define SUPPORTED_EXT 10
+#endif
 
 /* CD blocks scanning speed */
 #define CD_SCAN_SPEED 30

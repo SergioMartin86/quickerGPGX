@@ -52,6 +52,7 @@ void pcm_reset(void)
 {
   /* reset chip & clear external RAM */
   memset(&pcm, 0, sizeof(pcm_t));
+  
   /* reset default bank */
   pcm.bank = pcm.ram;
 

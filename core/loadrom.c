@@ -405,13 +405,13 @@ int load_bios(int system)
         switch (region_code)
         {
           case REGION_USA:
-            size = load_archive(CD_BIOS_US, scd.bootrom, 0x20000, 0);
+            size = load_archive(CD_BIOS_US, scd.bootrom, sizeof(scd.bootrom), 0);
             break;
           case REGION_EUROPE:
-            size = load_archive(CD_BIOS_EU, scd.bootrom, 0x20000, 0);
+            size = load_archive(CD_BIOS_EU, scd.bootrom, sizeof(scd.bootrom), 0);
             break;
           default:
-            size = load_archive(CD_BIOS_JP, scd.bootrom, 0x20000, 0);
+            size = load_archive(CD_BIOS_JP, scd.bootrom, sizeof(scd.bootrom), 0);
             break;
         }
 
@@ -553,6 +553,15 @@ int load_bios(int system)
 int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD)
 {
   int i, size;
+
+#ifdef USE_DYNAMIC_ALLOC
+  if (!ext)
+  {
+    /* allocate & initialize memory for Cartridge / CD hardware if required */
+    ext = (external_t *)calloc(1, sizeof(external_t));
+    if (!ext) return (0);
+  }
+#endif
 
   /* clear any existing patches */
   ggenie_shutdown();
@@ -728,6 +737,19 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
     int len;
     char fname[256];
 
+#if defined(USE_LIBCHDR)
+    /* automatically try to load associated .chd file if no .cue file CD image loaded yet */
+    if (!cdd.loaded)
+    {
+      len = strlen(filename);
+      while ((len && (filename[len] != '.')) || (len > 251)) len--;
+      strncpy(fname, filename, len);
+      strcpy(&fname[len], ".chd");
+      fname[len+4] = 0;
+      cdd_load(fname, (char *)cdc.ram);
+    }
+#endif
+
     /* automatically enable CD hardware emulation (Mode 1) in case :             */
     /*  - loaded ROM has known CD hardware support                               */
     /*      or                                                                   */
@@ -796,7 +818,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
       scd.cartridge.boot = 0x00;
 
       /* copy ROM to BOOTROM area */
-      memcpy(scd.bootrom, cart.rom, 0x20000);
+      memcpy(scd.bootrom, cart.rom, sizeof(scd.bootrom));
 
       /* mark CD BIOS as being loaded */
       system_bios = system_bios | 0x10;

@@ -41,6 +41,12 @@
 
 #include "shared.h"
 
+#ifdef USE_DYNAMIC_ALLOC
+external_t *ext;
+#else                     /* External Hardware (Cartridge, CD unit, ...) */
+external_t ext;
+#endif
+
 external_t ext;
 uint8 boot_rom[0x800];    /* Genesis BOOT ROM   */
 uint8 work_ram[0x10000];  /* 68K RAM  */
@@ -339,7 +345,7 @@ void gen_reset(int hard_reset)
     if ((system_hw == SYSTEM_MARKIII) || ((system_hw & SYSTEM_SMS) && (region_code == REGION_JAPAN_NTSC)))
     {
       /* some korean games rely on RAM to be initialized with values different from $00 or $ff */
-      memset(work_ram, 0xf0, 0x10000);
+      memset(work_ram, 0xf0, sizeof(work_ram));
     }
 
     /* reset cartridge hardware */

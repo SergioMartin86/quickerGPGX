@@ -227,6 +227,7 @@ static UINT8 SZ_BIT[256];   /* zero, sign and parity/overflow (=zero) flags for 
 static UINT8 SZP[256];      /* zero, sign and parity flags */
 static UINT8 SZHV_inc[256]; /* zero, sign, half carry and overflow flags INC r8 */
 static UINT8 SZHV_dec[256]; /* zero, sign, half carry and overflow flags DEC r8 */
+
 static UINT8 SZHVC_add[2*256*256]; /* flags for ADD opcode */
 static UINT8 SZHVC_sub[2*256*256]; /* flags for SUB opcode */
 
@@ -483,6 +484,18 @@ FUNCTABLE(Z80ed,ed);
 FUNCTABLE(Z80fd,fd);
 FUNCTABLE(Z80xycb,xycb);
 
+/****************************************************************************/
+/* Burn an odd amount of cycles, that is instructions taking something    */
+/* different from 4 T-states per opcode (and R increment)          */
+/****************************************************************************/
+INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
+{
+  if( cycles > 0 )
+  {
+    R += (cycles / cyclesum) * opcodes;
+    USE_CYCLES((cycles / cyclesum) * cyclesum * 15);
+  }
+}
 
 /***************************************************************
  * define an opcode function
