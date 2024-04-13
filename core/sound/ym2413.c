@@ -1818,3 +1818,12 @@ void YM2413Update(int *buffer, int length)
   }
 }
 
+unsigned char *YM2413GetContextPtr(void)
+{
+  return (unsigned char *)&ym2413;
+}
+
+unsigned int YM2413GetContextSize(void)
+{
+  return sizeof(YM2413);
+}

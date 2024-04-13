@@ -100,6 +100,40 @@ void megasd_reset(void)
   }
 }
 
+int megasd_context_save(uint8 *state)
+{
+  int bufferptr = 0;
+
+  save_param(&megasd_hw, sizeof(megasd_hw));
+
+  /* save needed CD hardware state (only if not already saved) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_save(&state[bufferptr]);
+    bufferptr += pcm_context_save(&state[bufferptr]);
+    save_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
+
+  return bufferptr;
+}
+
+int megasd_context_load(uint8 *state)
+{
+  int bufferptr = 0;
+
+  load_param(&megasd_hw, sizeof(megasd_hw));
+
+  /* load needed CD hardware state (only if not already loaded) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_load(&state[bufferptr], STATE_VERSION);
+    bufferptr += pcm_context_load(&state[bufferptr]);
+    load_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
+
+  return bufferptr;
+}
+
 /*
   Enhanced "SSF2" mapper
 */

@@ -1007,3 +1007,146 @@ void cdd_read_toc(uint8 *dst, size_t size)
   if (tocStream == NULL) return;
   cdStreamRead(dst, 1, size, tocStream);
 }
+
+int cdd_context_save(uint8 *state)
+{
+  int bufferptr = 0;
+  unsigned int offset = 0;
+
+  save_param(&cdd.cycles, sizeof(cdd.cycles));
+  save_param(&cdd.latency, sizeof(cdd.latency));
+  save_param(&cdd.index, sizeof(cdd.index));
+  save_param(&cdd.lba, sizeof(cdd.lba));
+  save_param(&cdd.scanOffset, sizeof(cdd.scanOffset));
+  save_param(&cdd.fader, sizeof(cdd.fader));
+  save_param(&cdd.status, sizeof(cdd.status));
+
+  /* current track is an audio track ? */
+  if (cdd.toc.tracks[cdd.index].type == TYPE_AUDIO)
+  {
+    /* get file read offset */
+#if defined(USE_LIBCHDR)
+    if (cdd.chd.file)
+    {
+      /* CHD file offset */
+      offset = cdd.chd.hunkofs;
+    }
+    else
+#endif
+#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
+    if (cdd.toc.tracks[cdd.index].vf.seekable)
+    {
+      /* VORBIS file sample offset */
+      offset = ov_pcm_tell(&cdd.toc.tracks[cdd.index].vf);
+    }
+    else
+#endif 
+    if (trackStream[cdd.index])
+    {
+      /* PCM file offset */
+      offset = cdStreamTell(trackStream[cdd.index]);
+    }
+  }
+
+  save_param(&offset, sizeof(offset));
+  save_param(&cdd.audio, sizeof(cdd.audio));
+
+  return bufferptr;
+}
+
+int cdd_context_load(uint8 *state, char *version)
+{
+  unsigned int offset, lba, index;
+  int bufferptr = 0;
+
+  load_param(&cdd.cycles, sizeof(cdd.cycles));
+  load_param(&cdd.latency, sizeof(cdd.latency));
+  load_param(&index, sizeof(cdd.index));
+  load_param(&lba, sizeof(cdd.lba));
+  load_param(&cdd.scanOffset, sizeof(cdd.scanOffset));
+  load_param(&cdd.fader, sizeof(cdd.fader));
+  load_param(&cdd.status, sizeof(cdd.status));
+
+  /* update current sector */
+  cdd.lba = lba;
+
+  /* support for previous state version (1.7.5) */
+  if ((version[11] == 0x31) && (version[13] == 0x37) && (version[15] == 0x35))
+  {
+    /* current track is an audio track ? */
+    if (cdd.toc.tracks[index].type == TYPE_AUDIO)
+    {
+      /* stay within track limits when seeking files */
+      if (lba < cdd.toc.tracks[index].start)
+      {
+        lba = cdd.toc.tracks[index].start;
+      }
+
+      /* seek to current track sector */
+      cdd_seek_audio(index, lba);
+    }
+  }
+  else
+  {
+    load_param(&offset, sizeof(offset));
+    load_param(&cdd.audio, sizeof(cdd.audio));
+
+    /* current track is an audio track ? */
+    if (cdd.toc.tracks[index].type == TYPE_AUDIO)
+    {
+#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
+#ifdef DISABLE_MANY_OGG_OPEN_FILES
+      /* check if track index has changed */
+      if (index != cdd.index)
+      {
+        /* close previous track VORBIS file structure to save memory */
+        if (cdd.toc.tracks[cdd.index].vf.datasource)
+        {
+          ogg_free(cdd.index);
+        }
+
+        /* open current track VORBIS file */
+        if (cdd.toc.tracks[index].vf.seekable)
+        {
+          ov_open_callbacks(trackStream[index],&cdd.toc.tracks[index].vf,0,0,cb);
+        }
+      }
+#endif
+#endif
+      /* seek to current file read offset */
+#if defined(USE_LIBCHDR)
+      if (cdd.chd.file)
+      {
+        /* CHD file offset */
+        cdd.chd.hunkofs = offset;
+      }
+      else
+#endif
+#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
+      if (cdd.toc.tracks[index].vf.seekable)
+      {
+        /* VORBIS file sample offset */
+        ov_pcm_seek(&cdd.toc.tracks[index].vf, offset);
+      }
+      else
+#endif 
+      if (trackStream[index])
+      {
+        /* PCM file offset */
+        cdStreamSeek(trackStream[index], offset, SEEK_SET);
+      }
+    }
+  }
+
+  /* seek to current subcode position */
+  if (tocStream)
+  {
+    /* 96 bytes per sector */
+    cdStreamSeek(tocStream, lba * 96, SEEK_SET);
+  }
+
+  /* update current track index */
+  cdd.index = index;
+
+  return bufferptr;
+}

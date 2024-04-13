@@ -194,7 +194,6 @@ void cdd_read_subcode(void)
   }
 }
 
-
 void cdd_process(void)
 {
   /* Process CDD command */

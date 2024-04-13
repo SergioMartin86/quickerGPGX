@@ -125,6 +125,8 @@ extern void cdd_process(void);
 
 // Externally implemented functions
 extern void cdd_reset(void);
+extern int cdd_context_save(uint8 *state);
+extern int cdd_context_load(uint8 *state, char *version);
 extern int cdd_load(const char *filename, char *header);
 extern void cdd_unload(void);
 extern void cdd_read_data(uint8 *dst, uint8 *subheader);
