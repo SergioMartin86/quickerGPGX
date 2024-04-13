@@ -36,6 +36,7 @@
  *
  ****************************************************************************************/
  
+#define SCD_CARTRIDGE_AREA_SIZE 0x810000
 
  /* CD compatible ROM/RAM cartridge */
 typedef struct 

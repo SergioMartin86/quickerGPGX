@@ -40,6 +40,17 @@
 
 #include "blip_buf.h"
 
+#if defined(USE_LIBVORBIS)
+#include <vorbis/vorbisfile.h>
+#elif defined(USE_LIBTREMOR)
+#include "tremor/ivorbisfile.h"
+#endif
+
+#if defined(USE_LIBCHDR)
+#include "libchdr/src/chd.h"
+#include "libchdr/src/cdrom.h"
+#endif
+
 #define cdd scd.cdd_hw
 
 /* CDD status */
@@ -86,6 +97,9 @@ extern const char extensions[SUPPORTED_EXT][16];
 /* CD track */
 typedef struct
 {
+#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
+  OggVorbis_File vf;
+#endif
   int start;
   int end;
   int type;
@@ -100,6 +114,18 @@ typedef struct
   int last;
   track_t tracks[100];
 } toc_t; 
+
+#if defined(USE_LIBCHDR)
+/* CHD file */
+typedef struct
+{
+  chd_file *file;
+  uint8 *hunk;
+  int hunkbytes;
+  int hunknum;
+  int hunkofs;
+} chd_t;
+#endif
 
 /* CDD hardware */
 typedef struct

@@ -199,7 +199,7 @@ void cd_cart_init(void)
     memset(&sram, 0, sizeof (T_SRAM));
 
     /* clear backup RAM */
-    memset(scd.cartridge.area, 0x00, 0x810000);
+    memset(scd.cartridge.area, 0x00, SCD_CARTRIDGE_AREA_SIZE);
 
     /* backup RAM size mask */
     scd.cartridge.mask = (1 << (scd.cartridge.id + 13)) - 1;

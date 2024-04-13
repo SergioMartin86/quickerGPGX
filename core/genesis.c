@@ -248,8 +248,8 @@ void gen_reset(int hard_reset)
     m68k.cycles = ((lines_per_frame - 192 + 159 - (27 * vdp_pal)) * MCYCLES_PER_LINE) + 1004;
 
     /* clear RAM (on real hardware, RAM values are random / undetermined on Power ON) */
-    memset(work_ram, 0x00, 0x10000);
-    memset(zram, 0x00, 0x2000);
+    memset(work_ram, 0x00, sizeof (work_ram));
+    memset(zram, 0x00, sizeof (zram));
   }
   else
   {
