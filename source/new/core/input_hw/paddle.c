@@ -36,13 +36,9 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-static struct
-{
-  uint8 State;
-  uint8 Counter;
-} paddle[2];
+#include "../macros.h"
+#include "input.h"
+#include "state.h"
 
 void paddle_reset(int port)
 {

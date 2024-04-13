@@ -36,37 +36,34 @@
  *
  ****************************************************************************************/
 
-#ifndef _EEPROM_93C_H_
-#define _EEPROM_93C_H_
+#pragma once
+
+#include <stdint.h>
 
 typedef enum
 {
-  WAIT_STANDBY,
-  WAIT_START,
-  GET_OPCODE,
-  WRITE_WORD,
-  READ_WORD
+  _93C_WAIT_STANDBY,
+  _93C_WAIT_START,
+  _93C_GET_OPCODE,
+  _93C_WRITE_WORD,
+  _93C_READ_WORD
 } T_STATE_93C;
 
 typedef struct
 {
-  uint8 enabled;  /* 1: chip enabled */
-  uint8 cs;       /* CHIP SELECT line state */
-  uint8 clk;      /* CLK line state */
-  uint8 data;     /* DATA OUT line state */
-  uint8 cycles;   /* current operation cycle */
-  uint8 we;       /* 1: write enabled */
-  uint8 opcode;   /* 8-bit opcode + address */
-  uint16 buffer;  /* 16-bit data buffer */
+  uint8_t enabled;  /* 1: chip enabled */
+  uint8_t cs;       /* CHIP SELECT line state */
+  uint8_t clk;      /* CLK line state */
+  uint8_t data;     /* DATA OUT line state */
+  uint8_t cycles;   /* current operation cycle */
+  uint8_t we;       /* 1: write enabled */
+  uint8_t opcode;   /* 8-bit opcode + address */
+  uint16_t buffer;  /* 16-bit data buffer */
   T_STATE_93C state; /* current operation state */
 } T_EEPROM_93C;
-
-/* global variables */
-extern T_EEPROM_93C eeprom_93c;
 
 /* Function prototypes */
 extern void eeprom_93c_init(void);
 extern void eeprom_93c_write(unsigned char data);
 extern unsigned char eeprom_93c_read(void);
 
-#endif

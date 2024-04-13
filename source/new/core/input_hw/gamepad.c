@@ -37,25 +37,12 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include "../system.h"
+#include "../m68k/m68k.h"
+#include "../z80/z80.h"
+#include "../input_hw/input.h"
+#include "../state.h"
 #include "gamepad.h"
-
-static struct
-{
-  uint8 State;
-  uint8 Counter;
-  uint8 Timeout;
-  uint32 Latency;
-} gamepad[MAX_DEVICES];
-
-static struct
-{
-  uint8 Latch;
-  uint8 Counter;
-} flipflop[2];
-
-static uint8 latch;
-
 
 void gamepad_reset(int port)
 {

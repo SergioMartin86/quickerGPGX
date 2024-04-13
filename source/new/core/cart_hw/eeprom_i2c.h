@@ -36,10 +36,7 @@
  *
  ****************************************************************************************/
 
-#ifndef _EEPROM_I2C_H_
-#define _EEPROM_I2C_H_
-
-#include <stdint.h>
+#pragma once
 
 /* Some notes from 8BitWizard (http://gendev.spritesmind.net/forum/viewtopic.php?t=206):
  *
@@ -176,9 +173,6 @@ struct eeprom_i2c_t
   uint8_t sda_out_bit;      /* SDA (read) bit position */
 };
 
-extern struct eeprom_i2c_t eeprom_i2c;
-
 /* Function prototypes */
 extern void eeprom_i2c_init(void);
 
-#endif

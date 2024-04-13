@@ -36,8 +36,15 @@
  *
  ****************************************************************************************/
 
-#ifndef _ACTIVATOR_H_
-#define _ACTIVATOR_H_
+#pragma once
+
+#include <stdint.h>
+
+struct activator_t
+{
+  uint8_t State;
+  uint8_t Counter;
+};
 
 /* Function prototypes */
 extern void activator_reset(int index);
@@ -46,4 +53,3 @@ extern unsigned char activator_2_read(void);
 extern void activator_1_write(unsigned char data, unsigned char mask);
 extern void activator_2_write(unsigned char data, unsigned char mask);
 
-#endif

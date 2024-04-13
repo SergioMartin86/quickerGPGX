@@ -37,48 +37,25 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <string.h>
+#include "../system.h"
+#include "../genesis.h"
+#include "../macros.h"
+#include "../state.h"
 #include "blip_buf.h"
+#include "psg.h"
+#include "ym2413.h"
+#include "ym2612.h"
+#include "sound.h"
 
 /* YM2612 internal clock = input clock / 6 = (master clock / 7) / 6 */
 #define YM2612_CLOCK_RATIO (7*6)
 
-/* FM output buffer (large enough to hold a whole frame at original chips rate) */
-#if defined(HAVE_YM3438_CORE) || defined(HAVE_OPLL_CORE)
-static int fm_buffer[1080 * 2 * 24];
-#else
-static int fm_buffer[1080 * 2];
-#endif
-
-static int fm_last[2];
-static int *fm_ptr;
-
-/* Cycle-accurate FM samples */
-static int fm_cycles_ratio;
-static int fm_cycles_start;
-static int fm_cycles_count;
-static int fm_cycles_busy;
-
 /* YM chip function pointers */
-static void (*YM_Update)(int *buffer, int length);
+void (*YM_Update)(int *buffer, int length);
 void (*fm_reset)(unsigned int cycles);
 void (*fm_write)(unsigned int cycles, unsigned int address, unsigned int data);
 unsigned int (*fm_read)(unsigned int cycles, unsigned int address);
-
-#ifdef HAVE_YM3438_CORE
-static ym3438_t ym3438;
-static short ym3438_accm[24][2];
-static int ym3438_sample[2];
-static int ym3438_cycles;
-#endif
-
-#ifdef HAVE_OPLL_CORE
-static opll_t opll;
-static int opll_accm[18][2];
-static int opll_sample;
-static int opll_cycles;
-static int opll_status;
-#endif
 
 /* Run FM chip until required M-cycles */
 INLINE void fm_update(int cycles)
@@ -125,7 +102,7 @@ static void YM2612_Write(unsigned int cycles, unsigned int a, unsigned int v)
   }
 
   /* write FM register */
-  YM2612Write(a, v);
+  //YM2612Write(a, v);
 }
 
 static unsigned int YM2612_Read(unsigned int cycles, unsigned int a)
@@ -400,42 +377,6 @@ int sound_update(unsigned int cycles)
     /* FM buffer start pointer */
     ptr = fm_buffer;
 
-    /* flush FM samples */
-    if (config.hq_fm)
-    {
-      /* high-quality Band-Limited synthesis */
-      do
-      {
-        /* left & right channels */
-        l = ((*ptr++ * preamp) / 100);
-        r = ((*ptr++ * preamp) / 100);
-        blip_add_delta(snd.blips[0], time, l-prev_l, r-prev_r);
-        prev_l = l;
-        prev_r = r;
-
-        /* increment time counter */
-        time += fm_cycles_ratio;
-      }
-      while (time < cycles);
-    }
-    else
-    {
-      /* faster Linear Interpolation */
-      do
-      {
-        /* left & right channels */
-        l = ((*ptr++ * preamp) / 100);
-        r = ((*ptr++ * preamp) / 100);
-        blip_add_delta_fast(snd.blips[0], time, l-prev_l, r-prev_r);
-        prev_l = l;
-        prev_r = r;
-
-        /* increment time counter */
-        time += fm_cycles_ratio;
-      }
-      while (time < cycles);
-    }
-
     /* reset FM buffer pointer */
     fm_ptr = fm_buffer;
 
@@ -455,110 +396,7 @@ int sound_update(unsigned int cycles)
     }
   }
 
-  /* end of blip buffer time frame */
-  blip_end_frame(snd.blips[0], cycles);
-
   /* return number of available samples */
-  return blip_samples_avail(snd.blips[0]);
+  return 0;
 }
 
-int sound_context_save(uint8 *state)
-{
-  int bufferptr = 0;
-  
-  if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
-  {
-#ifdef HAVE_YM3438_CORE
-    save_param(&config.ym3438, sizeof(config.ym3438));
-    if (config.ym3438)
-    {
-      save_param(&ym3438, sizeof(ym3438));
-      save_param(&ym3438_accm, sizeof(ym3438_accm));
-      save_param(&ym3438_sample, sizeof(ym3438_sample));
-      save_param(&ym3438_cycles, sizeof(ym3438_cycles));
-    }
-    else
-    {
-      bufferptr += YM2612SaveContext(state + sizeof(config.ym3438));
-    }
-#else
-    bufferptr = YM2612SaveContext(state);
-#endif
-  }
-  else
-  {
-#ifdef HAVE_OPLL_CORE
-    save_param(&config.opll, sizeof(config.opll));
-    if (config.opll)
-    {
-      save_param(&opll, sizeof(opll));
-      save_param(&opll_accm, sizeof(opll_accm));
-      save_param(&opll_sample, sizeof(opll_sample));
-      save_param(&opll_cycles, sizeof(opll_cycles));
-      save_param(&opll_status, sizeof(opll_status));
-    }
-    else
-#endif
-    {
-      save_param(YM2413GetContextPtr(),YM2413GetContextSize());
-    }
-  }
-
-  bufferptr += psg_context_save(&state[bufferptr]);
-
-  save_param(&fm_cycles_start,sizeof(fm_cycles_start));
-
-  return bufferptr;
-}
-
-int sound_context_load(uint8 *state)
-{
-  int bufferptr = 0;
-
-  if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
-  {
-#ifdef HAVE_YM3438_CORE
-    uint8 config_ym3438;
-    load_param(&config_ym3438, sizeof(config_ym3438));
-    if (config_ym3438)
-    {
-      load_param(&ym3438, sizeof(ym3438));
-      load_param(&ym3438_accm, sizeof(ym3438_accm));
-      load_param(&ym3438_sample, sizeof(ym3438_sample));
-      load_param(&ym3438_cycles, sizeof(ym3438_cycles));
-    }
-    else
-    {
-      bufferptr += YM2612LoadContext(state + sizeof(config_ym3438));
-    }
-#else
-    bufferptr = YM2612LoadContext(state);
-#endif
-  }
-  else
-  {
-#ifdef HAVE_OPLL_CORE
-    uint8 config_opll;
-    load_param(&config_opll, sizeof(config_opll));
-    if (config_opll)
-    {
-      load_param(&opll, sizeof(opll));
-      load_param(&opll_accm, sizeof(opll_accm));
-      load_param(&opll_sample, sizeof(opll_sample));
-      load_param(&opll_cycles, sizeof(opll_cycles));
-      load_param(&opll_status, sizeof(opll_status));
-    }
-    else
-#endif
-    {
-      load_param(YM2413GetContextPtr(),YM2413GetContextSize());
-    }
-  }
-
-  bufferptr += psg_context_load(&state[bufferptr]);
-
-  load_param(&fm_cycles_start,sizeof(fm_cycles_start));
-  fm_cycles_count = fm_cycles_start;
-
-  return bufferptr;
-}

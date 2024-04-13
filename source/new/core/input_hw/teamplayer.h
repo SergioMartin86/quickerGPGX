@@ -36,8 +36,17 @@
  *
  ****************************************************************************************/
 
-#ifndef _TEAMPLAYER_H_
-#define _TEAMPLAYER_H_
+#pragma once
+
+#include <stdint.h>
+
+struct teamplayer_t
+{
+  uint8_t State;
+  uint8_t Counter;
+  uint8_t Table[12];
+};
+
 
 /* Function prototypes */
 extern void teamplayer_init(int port);
@@ -47,4 +56,3 @@ extern unsigned char teamplayer_2_read(void);
 extern void teamplayer_1_write(unsigned char data, unsigned char mask);
 extern void teamplayer_2_write(unsigned char data, unsigned char mask);
 
-#endif

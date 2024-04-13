@@ -36,16 +36,11 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include "../macros.h"
+#include "../state.h"
+#include "input.h"
 
 #define XE_1AP_LATENCY 3
-
-static struct
-{
-  uint8 State;
-  uint8 Counter;
-  uint8 Latency;
-} xe_1ap[2];
 
 void xe_1ap_reset(int index)
 {

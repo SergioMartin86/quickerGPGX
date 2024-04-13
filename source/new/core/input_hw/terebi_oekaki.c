@@ -36,13 +36,8 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-static struct
-{
-  uint8 axis;
-  uint8 busy;
-} tablet;
+#include "input.h"
+#include "../state.h"
 
 void terebi_oekaki_reset(void)
 {
@@ -54,7 +49,7 @@ void terebi_oekaki_reset(void)
 
 unsigned short terebi_oekaki_read(void)
 {
-  uint16 data = (tablet.busy << 15) | input.analog[0][tablet.axis];
+  uint16_t data = (tablet.busy << 15) | input.analog[0][tablet.axis];
 
   if (!(input.pad[0] & INPUT_B))
   {

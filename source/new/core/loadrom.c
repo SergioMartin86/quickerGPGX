@@ -37,8 +37,16 @@
  *
  ****************************************************************************************/
 
+#include <osd.h>
 #include <ctype.h>
-#include "shared.h"
+#include "input_hw/input.h"
+#include "cart_hw/ggenie.h"
+#include "cart_hw/areplay.h"
+#include "loadrom.h"
+#include "system.h"
+#include "genesis.h"
+#include "vdp_ctrl.h"
+#include "state.h"
 
 /*** ROM Information ***/
 #define ROMCONSOLE    256
@@ -89,11 +97,6 @@ typedef struct
   char pName[14];
 } PERIPHERALINFO;
 
-
-ROMINFO rominfo;
-uint8 romtype;
-
-static uint8 rom_region;
 
 /***************************************************************************
  * Genesis ROM Manufacturers
@@ -198,10 +201,10 @@ static const PERIPHERALINFO peripheralinfo[MAXPERIPHERALS] =
  *
  * Compute ROM real checksum.
  ***************************************************************************/
-static uint16 getchecksum(uint8 *rom, int length)
+static uint16_t getchecksum(uint8_t *rom, int length)
 {
   int i;
-  uint16 checksum = 0;
+  uint16_t checksum = 0;
 
   for (i = 0; i < length; i += 2)
   {
@@ -217,10 +220,10 @@ static uint16 getchecksum(uint8 *rom, int length)
  *
  * Convert interleaved (.smd) ROM files.
  ***************************************************************************/
-static void deinterleave_block(uint8 * src)
+static void deinterleave_block(uint8_t * src)
 {
   int i;
-  uint8 block[0x4000];
+  uint8_t block[0x4000];
   memcpy (block, src, 0x4000);
   for (i = 0; i < 0x2000; i += 1)
   {
@@ -284,7 +287,7 @@ void getrominfo(char *romheader)
 #ifdef LSB_FIRST
     rominfo.checksum =  (rominfo.checksum >> 8) | ((rominfo.checksum & 0xff) << 8);
 #endif
-    rominfo.realchecksum = getchecksum(((uint8 *) cart.rom) + 0x200, cart.romsize - 0x200);
+    rominfo.realchecksum = getchecksum(((uint8_t *) cart.rom) + 0x200, cart.romsize - 0x200);
 
     /* Supported peripherals */
     rominfo.peripherals = 0;
@@ -295,7 +298,7 @@ void getrominfo(char *romheader)
   }
   else
   {
-    uint16 offset = 0;
+    uint16_t offset = 0;
 
     /* detect Master System ROM header */
     if (!memcmp (&romheader[0x1ff0], "TMR SEGA", 8))
@@ -445,7 +448,7 @@ int load_bios(int system)
           int i;
           for (i = 0; i < size; i += 2)
           {
-            uint8 temp = scd.bootrom[i];
+            uint8_t temp = scd.bootrom[i];
             scd.bootrom[i] = scd.bootrom[i+1];
             scd.bootrom[i+1] = temp;
           }
@@ -550,7 +553,7 @@ int load_bios(int system)
  * Return 0 on error, 1 on success
  *
  ***************************************************************************/
-int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD)
+int load_rom(char *filename)
 {
   int i, size;
 
@@ -575,7 +578,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
   }
 
   /* auto-detect CD image file */
-  size = cdd_load(primaryCD, (char *)(cart.rom));
+  size = cdd_load(filename, (char *)(cart.rom));
   if (size < 0)
   {
     /* error opening file */
@@ -592,7 +595,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
   {
     /* load file into ROM buffer */
     char extension[4];
-    size = load_archive(romFile, cart.rom, MAXROMSIZE, extension);
+    size = load_archive(filename, cart.rom, cdd.loaded ? 0x800000 : MAXROMSIZE, extension);
 
     /* mark BOOTROM as unloaded if they have been overwritten by cartridge ROM */
     if (size > 0x800000)
@@ -615,7 +618,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
     }
 
     /* convert lower case file extension to upper case */
-    *(uint32 *)(extension) &= 0xdfdfdfdf;
+    *(uint32_t *)(extension) &= 0xdfdfdfdf;
 
     /* auto-detect system hardware from ROM file extension */
     if (!memcmp("SMS", &extension[0], 3))
@@ -656,7 +659,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
       {
         for(i = 0; i < size; i += 2)
         {
-          uint8 temp = cart.rom[i];
+          uint8_t temp = cart.rom[i];
           cart.rom[i] = cart.rom[i+1];
           cart.rom[i+1] = temp;
         }
@@ -697,7 +700,7 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
     /* Byteswap ROM to optimize 16-bit access */
     for (i = 0; i < cart.romsize; i += 2)
     {
-      uint8 temp = cart.rom[i];
+      uint8_t temp = cart.rom[i];
       cart.rom[i] = cart.rom[i+1];
       cart.rom[i+1] = temp;
     }
@@ -765,12 +768,12 @@ int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD
         /* automatically try to load associated .iso file if no CD image loaded yet */
         if (!cdd.loaded)
         {
-          len = strlen(secondaryCD);
-          while ((len && (secondaryCD[len] != '.')) || (len > 251)) len--;
-          strncpy(fname, secondaryCD, len);
+          len = strlen(filename);
+          while ((len && (filename[len] != '.')) || (len > 251)) len--;
+          strncpy(fname, filename, len);
           strcpy(&fname[len], ".iso");
           fname[len+4] = 0;
-          cdd_load(secondaryCD, (char *)cdc.ram);
+          cdd_load(fname, (char *)cdc.ram);
         }
 
         /* enable CD hardware */

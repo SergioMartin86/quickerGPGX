@@ -39,21 +39,19 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-#ifdef USE_DYNAMIC_ALLOC
-external_t *ext;
-#else                     /* External Hardware (Cartridge, CD unit, ...) */
-external_t ext;
-#endif
-uint8 boot_rom[0x800];    /* Genesis BOOT ROM   */
-uint8 work_ram[0x10000];  /* 68K RAM  */
-uint8 zram[0x2000];       /* Z80 RAM  */
-uint32 zbank;             /* Z80 bank window address */
-uint8 zstate;             /* Z80 bus state (d0 = /RESET, d1 = BUSREQ, d2 = WAIT) */
-uint8 pico_current;       /* PICO current page */
-
-static uint8 tmss[4];     /* TMSS security register */
+#include <stdlib.h>
+#include <string.h>
+#include "m68k/m68k.h"
+#include "z80/z80.h"
+#include "sound/sound.h"
+#include "system.h"
+#include "genesis.h"
+#include "vdp_ctrl.h"
+#include "mem68k.h"
+#include "memz80.h"
+#include "membnk.h"
+#include "io_ctrl.h"
+#include "state.h"
 
 /*--------------------------------------------------------------------------*/
 /* Init, reset, shutdown functions                                          */
@@ -65,6 +63,9 @@ void gen_init(void)
 
   /* initialize Z80 */
   z80_init(0,z80_irq_callback);
+
+  // Resetting mapper targets
+  for (i = 0; i < 255; i++) m68k.memory_map[i].target = MM_TARGET_NULL;
 
   /* 8-bit / 16-bit modes */
   if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
@@ -78,6 +79,7 @@ void gen_init(void)
     /* $800000-$DFFFFF : illegal access by default */
     for (i=0x80; i<0xe0; i++)
     {
+      m68k.memory_map[i].target   = MM_TARGET_WORK_RAM;
       m68k.memory_map[i].base     = work_ram; /* for VDP DMA */
       m68k.memory_map[i].read8    = m68k_lockup_r_8;
       m68k.memory_map[i].read16   = m68k_lockup_r_16;
@@ -101,6 +103,7 @@ void gen_init(void)
     /* $E00000-$FFFFFF : Work RAM (64k) */
     for (i=0xe0; i<0x100; i++)
     {
+      m68k.memory_map[i].target   = MM_TARGET_WORK_RAM;
       m68k.memory_map[i].base     = work_ram;
       m68k.memory_map[i].read8    = NULL;
       m68k.memory_map[i].read16   = NULL;
@@ -258,7 +261,7 @@ void gen_reset(int hard_reset)
   else
   {
     /* when RESET button is pressed, 68k could be anywhere in VDP frame (Bonkers, Eternal Champions, X-Men 2) */
-    m68k.cycles = (uint32)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
+    m68k.cycles = (uint32_t)((MCYCLES_PER_LINE * lines_per_frame) * ((double)rand() / (double)RAND_MAX));
 
     /* reset YM2612 (on hard reset, this is done by sound_reset) */
     fm_reset(0);
@@ -327,9 +330,11 @@ void gen_reset(int hard_reset)
       if (system_bios & SYSTEM_MD)
       {
         /* save default cartridge slot mapping */
+        cart.target = m68k.memory_map[0].target;
         cart.base = m68k.memory_map[0].base;
 
         /* BOOT ROM is mapped at $000000-$0007FF */
+        m68k.memory_map[0].target = MM_TARGET_BOOT_ROM;
         m68k.memory_map[0].base = boot_rom;
       }
     }
@@ -433,11 +438,13 @@ void gen_bankswitch_w(unsigned int data)
     if (data & 1)
     {
       /* enable cartridge ROM */
+      m68k.memory_map[0].target = cart.target;
       m68k.memory_map[0].base = cart.base;
     }
     else
     {
       /* enable internal BOOT ROM */
+      m68k.memory_map[0].target = MM_TARGET_BOOT_ROM;
       m68k.memory_map[0].base = boot_rom;
     }
   }

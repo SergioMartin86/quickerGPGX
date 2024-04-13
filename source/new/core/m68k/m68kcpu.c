@@ -2,6 +2,8 @@
 /*                            MAIN 68K CORE                                 */
 /* ======================================================================== */
 
+#include "../state.h"
+
 extern int vdp_68k_irq_ack(int int_level);
 
 #define m68ki_cpu m68k
@@ -18,29 +20,15 @@ extern int vdp_68k_irq_ack(int int_level);
 #include "m68kconf.h"
 #include "m68kcpu.h"
 #include "m68kops.h"
-#include "../shared.h"
-
-#ifdef USE_BIZHAWK_CALLBACKS
-#include <callbacks.h>
-#endif
-
-#ifdef USE_RAM_DEEPFREEZE
-int deepfreeze_list_size;
-struct deepfreeze_list_t deepfreeze_list[MAX_DEEP_FREEZE_ENTRIES];
-#endif
+#include "../state.h"
 
 /* ======================================================================== */
 /* ================================= DATA ================================= */
 /* ======================================================================== */
 
 #ifdef BUILD_TABLES
-static unsigned char m68ki_cycles[0x10000];
+unsigned char m68ki_cycles[0x10000];
 #endif
-
-static int irq_latency;
-
-m68ki_cpu_core m68k;
-
 
 /* ======================================================================== */
 /* =============================== CALLBACKS ============================== */
@@ -232,7 +220,7 @@ void m68k_set_irq(unsigned int int_level)
 void m68k_set_irq_delay(unsigned int int_level)
 {
   /* Prevent reentrance */
-  if (!irq_latency)
+  if (!m68k_irq_latency)
   {
     /* This is always triggered from MOVE instructions (VDP CTRL port write) */
     /* We just make sure this is not a MOVE.L instruction as we could be in */
@@ -243,13 +231,13 @@ void m68k_set_irq_delay(unsigned int int_level)
       USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
 
       /* One instruction delay before interrupt */
-      irq_latency = 1;
+      m68k_irq_latency = 1;
       m68ki_trace_t1() /* auto-disable (see m68kcpu.h) */
       m68ki_use_data_space() /* auto-disable (see m68kcpu.h) */
       REG_IR = m68ki_read_imm_16();
       m68ki_instruction_jump_table[REG_IR]();
       m68ki_exception_if_trace() /* auto-disable (see m68kcpu.h) */
-      irq_latency = 0;
+      m68k_irq_latency = 0;
     }
 
     /* Set IRQ level */
@@ -263,52 +251,6 @@ void m68k_set_irq_delay(unsigned int int_level)
   /* Check interrupt mask to process IRQ  */
   m68ki_check_interrupts(); /* Level triggered (IRQ) */
 }
-
-#ifdef USE_BIZHAWK_CALLBACKS
-void CDLog68k(uint addr, uint flags)
-{
-	addr &= 0x00FFFFFF;
-
-	//check for sram region first
-	if(sram.on)
-	{
-		if(addr >= sram.start && addr <= sram.end)
-		{
-			biz_cdcallback(addr - sram.start, eCDLog_AddrType_SRAM, flags);
-			return;
-		}
-	}
-
-	if(addr < 0x400000)
-	{
-		uint block64k_rom;
-
-		//apply memory map to process rom address
-		unsigned char* block64k = m68ki_cpu.memory_map[((addr)>>16)&0xff].base;
-		
-		//outside the ROM range. complex mapping logic/accessories; not sure how to handle any of this
-		if(block64k < cart.rom || block64k >= cart.rom + cart.romsize)
-			return;
-
-		block64k_rom = block64k - cart.rom;
-		addr = ((addr) & 0xffff) + block64k_rom;
-
-		//outside the ROM range somehow
-		if(addr >= cart.romsize)
-			return;
-
-		biz_cdcallback(addr, eCDLog_AddrType_MDCART, flags);
-		return;
-	}
-
-	if(addr > 0xFF0000)
-	{
-		//no memory map needed
-		biz_cdcallback(addr & 0xFFFF, eCDLog_AddrType_RAM68k, flags);
-		return;
-	}
-}
-#endif
 
 void m68k_run(unsigned int cycles) 
 {
@@ -423,7 +365,7 @@ void m68k_pulse_reset(void)
   /* Interrupt mask to level 7 */
   FLAG_INT_MASK = 0x0700;
   CPU_INT_LEVEL = 0;
-  irq_latency = 0;
+  m68k_irq_latency = 0;
 
   /* Go to supervisor mode */
   m68ki_set_s_flag(SFLAG_SET);

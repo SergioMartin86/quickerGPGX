@@ -36,12 +36,13 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-#include "eeprom_i2c.h"
-#include "../scrc32.h"
-
-T_SRAM sram;
-int force_sram = 0;
+#include <zlib.h>
+#include <string.h>
+#include "../loadrom.h"
+#include "../macros.h"
+#include "../genesis.h"
+#include "../state.h"
+#include "sram.h"
 
 /****************************************************************************
  * A quick guide to external RAM on the Genesis
@@ -211,11 +212,11 @@ void sram_init(void)
       /* this prevents backup RAM from being mapped in place of mirrored ROM when using S&K LOCK-ON feature */
       sram.on = 0;
     }
-    else if (force_sram && cart.romsize <= 0x200000)
+
+    /* by default, enable backup RAM for ROM smaller than 2MB */
+    else if (cart.romsize <= 0x200000)
     {
-      // by default, gpgx enables saveram for all rom no bigger than 2MB
-	  // we don't do that because it confuses ram searches and debugging, and adds extra baggage to savestates
-	  // but some games do need it, so allow that to be hacked in here
+      /* 64KB static RAM mapped to $200000-$20ffff */
       sram.start = 0x200000;
       sram.end = 0x20ffff;
       sram.on = 1;
@@ -241,34 +242,4 @@ void sram_write_byte(unsigned int address, unsigned int data)
 void sram_write_word(unsigned int address, unsigned int data)
 {
   WRITE_WORD(sram.sram, address & 0xfffe, data);
-}
-
-
-// the variables in SRAM_T are all part of "configuration", so we don't have to save those.
-// the only thing that needs to be saved is the SRAM itself and the SEEPROM struct (if applicable)
-
-int sram_get_actual_size()
-{
-	if (!sram.on)
-		return 0;
-	switch (sram.custom)
-	{
-	case 0: // plain bus access saveram
-		break;
-	case 1: // i2c
-		return eeprom_i2c.spec.size_mask + 1;
-	case 2: // spi
-		return 0x10000; // it doesn't appear to mask anything internally
-	case 3: // 93c
-		return 0x10000; // SMS only and i don't have time to look into it
-	default:
-		return 0x10000; // who knows
-	}
-	// figure size for plain bus access saverams
-	{
-		int startaddr = sram.start / 8192;
-		int endaddr = sram.end / 8192 + 1;
-		int size = (endaddr - startaddr) * 8192;
-		return size;
-	}
 }

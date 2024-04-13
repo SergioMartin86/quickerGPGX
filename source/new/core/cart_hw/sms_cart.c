@@ -39,54 +39,19 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
+#include <zlib.h>
+#include <string.h>
+#include "../input_hw/terebi_oekaki.h"
+#include "../input_hw/input.h"
+#include "../system.h"
+#include "../loadrom.h"
+#include "../z80/z80.h"
+#include "../genesis.h"
 #include "eeprom_93c.h"
-#include "terebi_oekaki.h"
+#include "sram.h"
+#include "state.h"
 
-#define MAPPER_NONE           (0x00)
-#define MAPPER_TEREBI         (0x01)
-#define MAPPER_RAM_2K         (0x02)
-#define MAPPER_RAM_8K         (0x03)
-#define MAPPER_RAM_8K_EXT1    (0x04)
-#define MAPPER_SEGA           (0x10)
-#define MAPPER_SEGA_X         (0x11)
-#define MAPPER_93C46          (0x12)
-#define MAPPER_CODIES         (0x13)
-#define MAPPER_MULTI_16K      (0x14)
-#define MAPPER_KOREA          (0x15)
-#define MAPPER_KOREA_16K      (0x16)
-#define MAPPER_MULTI_2x16K_V1 (0x17)
-#define MAPPER_MULTI_2x16K_V2 (0x18)
-#define MAPPER_MULTI_16K_32K  (0x19)
-#define MAPPER_ZEMINA_16K_32K (0x1A)
-#define MAPPER_HWASUNG        (0x1B)
-#define MAPPER_KOREA_8K       (0x20)
-#define MAPPER_MSX            (0x21)
-#define MAPPER_MSX_NEMESIS    (0x22)
-#define MAPPER_MULTI_8K       (0x23)
-#define MAPPER_MULTI_4x8K     (0x24)
-#define MAPPER_ZEMINA_4x8K    (0x25)
-#define MAPPER_MULTI_32K      (0x40)
-#define MAPPER_MULTI_32K_16K  (0x41)
-#define MAPPER_HICOM          (0x42)
 
-typedef struct
-{
-  uint32 crc;
-  uint8 g_3d;
-  uint8 fm;
-  uint8 peripheral;
-  uint8 mapper;
-  uint8 system;
-  uint8 region;
-} rominfo_t;
-
-typedef struct
-{
-  uint8 fcr[4];
-  uint8 mapper;
-  uint16 pages;
-} romhw_t;
 
 static const rominfo_t game_list[] =
 {
@@ -375,7 +340,7 @@ static const rominfo_t game_list[] =
   {0xD29889AD, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Fantasy Zone: The Maze */
   {0xA4AC35D8, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Galaxy Force */
   {0x6C827520, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Galaxy Force (U) */
-  {0x1890F407, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Game Box Série Esportes Radicais (BR) */
+  {0x1890F407, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Game Box Sï¿½rie Esportes Radicais (BR) */
   {0xB746A6F5, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Global Defense */
   {0x91A0FC4E, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Global Defense [Proto] */
   {0x48651325, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Golfamania */
@@ -386,7 +351,7 @@ static const rominfo_t game_list[] =
   {0xE8511B08, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Lord of The Sword */
   {0x0E333B6E, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Miracle Warriors - Seal of The Dark Lord */
   {0x301A59AA, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Miracle Warriors - Seal of The Dark Lord [Proto] */
-  {0x01D67C0B, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Mônica no Castelo do Dragão (BR) */
+  {0x01D67C0B, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Mï¿½nica no Castelo do Dragï¿½o (BR) */
   {0x5589D8D2, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Out Run */
   {0xE030E66C, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Parlour Games */
   {0xF97E9875, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Penguin Land */
@@ -401,7 +366,7 @@ static const rominfo_t game_list[] =
   {0x1A390B93, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Tennis Ace */
   {0xAE920E4B, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Thunder Blade */
   {0x51BD14BE, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Time Soldiers */
-  {0x22CCA9BB, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Turma da Mônica em: O Resgate (BR) */
+  {0x22CCA9BB, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Turma da Mï¿½nica em: O Resgate (BR) */
   {0xB52D60C8, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Ultima IV */
   {0xDE9F8517, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Ultima IV [Proto] */
   {0xDFB0B161, 0, 1, 0, MAPPER_SEGA, SYSTEM_SMS,        REGION_USA}, /* Vigilante */
@@ -441,17 +406,13 @@ static const rominfo_t game_list[] =
   {0x07301F83, 0, 1, 0, MAPPER_SEGA, SYSTEM_PBC, REGION_JAPAN_NTSC}  /* Phantasy Star [Megadrive] (J) */
 };
 
-/* Cartridge & BIOS ROM hardware */
-static romhw_t cart_rom;
-static romhw_t bios_rom;
-
 /* Current slot */
 static struct
 {
-  uint8 *rom;
-  uint8 *fcr;
-  uint8 mapper;
-  uint16 pages;
+  uint8_t *rom;
+  uint8_t *fcr;
+  uint8_t mapper;
+  uint16_t pages;
 } slot;
 
 /* Function prototypes */
@@ -491,7 +452,7 @@ void sms_cart_init(void)
   int i = sizeof(game_list) / sizeof(rominfo_t) - 1;
 
   /* game CRC */
-  uint32 crc = crc32(0, cart.rom, cart.romsize);
+  uint32_t crc = crc32(0, cart.rom, cart.romsize);
 
   /* unmapped memory return $FF on read (mapped to unused cartridge areas $510000-$5103FF & $510400-$5107FF) */
   memset(cart.rom + 0x510000, 0xFF, 0x800);
@@ -730,7 +691,7 @@ void sms_cart_reset(void)
   }
 }
 
-void sms_cart_switch(uint8 mode)
+void sms_cart_switch(uint8_t mode)
 {
   /* by default, disable cartridge & BIOS ROM */
   slot.pages = 0;
@@ -824,9 +785,9 @@ int sms_cart_region_detect(void)
   int i = sizeof(game_list) / sizeof(rominfo_t) - 1;
 
   /* compute CRC */
-  uint32 crc = crc32(0, cart.rom, cart.romsize);
+  uint32_t crc = crc32(0, cart.rom, cart.romsize);
 
-  /* Turma da Mônica em: O Resgate & Wonder Boy III enable FM support on japanese hardware only */
+  /* Turma da Mï¿½nica em: O Resgate & Wonder Boy III enable FM support on japanese hardware only */
   if (config.ym2413 && ((crc == 0x22CCA9BB) || (crc == 0x679E1676)))
   {
     return REGION_JAPAN_NTSC;
@@ -862,118 +823,6 @@ int sms_cart_region_detect(void)
 
   /* default region */
   return REGION_USA;
-}
-
-int sms_cart_context_save(uint8 *state)
-{
-  int bufferptr = 0;
-
-  /* check if cartridge ROM is disabled */
-  if (io_reg[0x0E] & 0x40)
-  {
-    /* save Boot ROM mapper settings */
-    save_param(bios_rom.fcr, 4);
-  }
-  else
-  {
-    /* save cartridge mapper settings */
-    save_param(cart_rom.fcr, 4);
-  }
-
-  /* support for SG-1000 games with extra RAM */
-  if ((cart_rom.mapper == MAPPER_RAM_8K) || (cart_rom.mapper == MAPPER_RAM_8K_EXT1))
-  {
-    /* 8KB extra RAM */
-    save_param(work_ram + 0x2000, 0x2000);
-  }
-  else if (cart_rom.mapper == MAPPER_RAM_2K)
-  {
-    /* 2KB extra RAM */
-    save_param(work_ram + 0x2000, 0x800);
-  }
-
-  return bufferptr;
-}
-
-int sms_cart_context_load(uint8 *state)
-{
-  int bufferptr = 0;
-
-  /* check if cartridge ROM is disabled */
-  if (io_reg[0x0E] & 0x40)
-  {
-    /* load Boot ROM mapper settings */
-    load_param(bios_rom.fcr, 4);
-
-    /* set default cartridge ROM paging */
-    switch (cart_rom.mapper)
-    {
-      case MAPPER_SEGA:
-      case MAPPER_SEGA_X:
-        cart_rom.fcr[0] = 0;
-        cart_rom.fcr[1] = 0;
-        cart_rom.fcr[2] = 1;
-        cart_rom.fcr[3] = 2;
-        break;
-
-      case MAPPER_ZEMINA_16K_32K:
-        cart_rom.fcr[0] = 0;
-        cart_rom.fcr[1] = 0;
-        cart_rom.fcr[2] = 1;
-        cart_rom.fcr[3] = 1;
-        break;
-
-      case MAPPER_ZEMINA_4x8K:
-        cart_rom.fcr[0] = 3;
-        cart_rom.fcr[1] = 2;
-        cart_rom.fcr[2] = 1;
-        cart_rom.fcr[3] = 0;
-        break;
-
-      case MAPPER_KOREA_8K:
-      case MAPPER_MSX:
-      case MAPPER_MSX_NEMESIS:
-      case MAPPER_MULTI_4x8K:
-      case MAPPER_MULTI_8K:
-        cart_rom.fcr[0] = 0;
-        cart_rom.fcr[1] = 0;
-        cart_rom.fcr[2] = 0;
-        cart_rom.fcr[3] = 0;
-        break;
-
-      default:
-        cart_rom.fcr[0] = 0;
-        cart_rom.fcr[1] = 0;
-        cart_rom.fcr[2] = 1;
-        cart_rom.fcr[3] = 0;
-        break;
-    }
-  }
-  else
-  {
-    /* load cartridge mapper settings */
-    load_param(cart_rom.fcr, 4);
-
-    /* set default BIOS ROM paging (SEGA mapper by default) */
-    bios_rom.fcr[0] = 0;
-    bios_rom.fcr[1] = 0;
-    bios_rom.fcr[2] = 1;
-    bios_rom.fcr[3] = 2;
-  }
-
-  /* support for SG-1000 games with extra RAM */
-  if ((cart_rom.mapper == MAPPER_RAM_8K) || (cart_rom.mapper == MAPPER_RAM_8K_EXT1))
-  {
-    /* 8KB extra RAM */
-    load_param(work_ram + 0x2000, 0x2000);
-  }
-  else if (cart_rom.mapper == MAPPER_RAM_2K)
-  {
-    /* 2KB extra RAM */
-    load_param(work_ram + 0x2000, 0x800);
-  }
-
-  return bufferptr;
 }
 
 static void mapper_reset(void)
@@ -1261,7 +1110,7 @@ static void mapper_8k_w(int offset, unsigned char data)
   int i;
 
   /* cartridge ROM page (8KB) */
-  uint8 *page = &slot.rom[(data % slot.pages) << 13];
+  uint8_t *page = &slot.rom[(data % slot.pages) << 13];
   
   /* Save frame control register data */
   slot.fcr[offset] = data;
@@ -1368,7 +1217,7 @@ static void mapper_16k_w(int offset, unsigned char data)
   int i;
 
   /* cartridge ROM page (16KB) */
-  uint8 page = data % slot.pages;
+  uint8_t page = data % slot.pages;
 
   /* page index increment (SEGA mapper only) */
   if ((slot.fcr[0] & 0x03) && (slot.mapper == MAPPER_SEGA))
@@ -1565,7 +1414,7 @@ static void mapper_32k_w(unsigned char data)
   int i;
 
   /* cartridge ROM page (32KB) */
-  uint8 *page = &slot.rom[(data % slot.pages) << 15];
+  uint8_t *page = &slot.rom[(data % slot.pages) << 15];
   
   /* Save frame control register data */
   slot.fcr[0] = data;

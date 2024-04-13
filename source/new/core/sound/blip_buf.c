@@ -464,6 +464,8 @@ simply ignoring the low half. */
 
 void blip_add_delta( blip_t* m, unsigned time, int delta_l, int delta_r )
 {
+  return; 
+  
   if (delta_l | delta_r)
   {
     unsigned fixed = (unsigned) ((time * m->factor + m->offset) >> pre_shift);

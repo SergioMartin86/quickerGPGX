@@ -39,21 +39,22 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-#include "eq.h"
+#include <string.h>
+#include <osd.h>
+#include "cart_hw/svp/svp.h"
+#include "sound/eq.h"
+#include "m68k/m68k.h"
+#include "z80/z80.h"
+#include "sound/sound.h"
+#include "input_hw/input.h"
+#include "system.h"
+#include "genesis.h"
+#include "vdp_ctrl.h"
+#include "vdp_render.h"
+#include "io_ctrl.h"
+#include "state.h"
 
 /* Global variables */
-t_bitmap bitmap;
-t_snd snd;
-uint32 mcycles_vdp;
-uint8 system_hw;
-uint8 system_bios;
-uint32 system_clock;
-int16 SVP_cycles = 800; 
-
-static uint8 pause_b;
-static EQSTATE eq[2];
-static int16 llp,rrp;
 
 /******************************************************************************************/
 /* Audio subsystem                                                                        */
@@ -190,117 +191,12 @@ void audio_shutdown(void)
   }
 }
 
-int audio_update(int16 *buffer)
+int audio_update(int16_t *buffer)
 {
-  /* run sound chips until end of frame */
   int size = sound_update(mcycles_vdp);
 
-  /* Mega CD sound hardware enabled ? */
-  if (snd.blips[1] && snd.blips[2])
-  {
-    /* sync PCM chip with other sound chips */
-    pcm_update(size);
 
-    /* read CD-DA samples */
-    cdd_update_audio(size);
-
-#ifdef ALIGN_SND
-    /* return an aligned number of samples if required */
-    size &= ALIGN_SND;
-#endif
-
-    /* resample & mix FM/PSG, PCM & CD-DA streams to output buffer */
-    blip_mix_samples(snd.blips[0], snd.blips[1], snd.blips[2], buffer, size);
-  }
-  else
-  {
-#ifdef ALIGN_SND
-    /* return an aligned number of samples if required */
-    size &= ALIGN_SND;
-#endif
-
-    /* resample FM/PSG mixed stream to output buffer */
-    blip_read_samples(snd.blips[0], buffer, size);
-  }
-
-  /* Audio filtering */
-  if (config.filter)
-  {
-    int samples = size;
-    int16 *out = buffer;
-    int32 l, r;
-
-    if (config.filter & 1)
-    {
-      /* single-pole low-pass filter (6 dB/octave) */
-      uint32 factora  = config.lp_range;
-      uint32 factorb  = 0x10000 - factora;
-
-      /* restore previous sample */
-      l = llp;
-      r = rrp;
-
-      do
-      {
-        /* apply low-pass filter */
-        l = l*factora + out[0]*factorb;
-        r = r*factora + out[1]*factorb;
-
-        /* 16.16 fixed point */
-        l >>= 16;
-        r >>= 16;
-
-        /* update sound buffer */
-        *out++ = l;
-        *out++ = r;
-      }
-      while (--samples);
-
-      /* save last samples for next frame */
-      llp = l;
-      rrp = r;
-    }
-    else if (config.filter & 2)
-    {
-      do
-      {
-        /* 3 Band EQ */
-        l = do_3band(&eq[0],out[0]);
-        r = do_3band(&eq[1],out[1]);
-
-        /* clipping (16-bit samples) */
-        if (l > 32767) l = 32767;
-        else if (l < -32768) l = -32768;
-        if (r > 32767) r = 32767;
-        else if (r < -32768) r = -32768;
-
-        /* update sound buffer */
-        *out++ = l;
-        *out++ = r;
-      }
-      while (--samples);
-    }
-  }
-
-  /* Mono output mixing */
-  if (config.mono)
-  {
-    int16 out;
-    int samples = size;
-    do
-    {
-      out = (buffer[0] + buffer[1]) / 2;
-      *buffer++ = out;
-      *buffer++ = out;
-    }
-    while (--samples);
-  }
-
-#ifdef LOGSOUND
-  error("%d samples returned\n\n",size);
-#endif
-
-  return size;
+  return 0;
 }
 
 /****************************************************************
@@ -319,7 +215,7 @@ void system_reset(void)
 {
   gen_reset(1);
   io_reset();
-  render_reset();
+  // render_reset();
   vdp_reset();
   sound_reset();
   audio_reset();

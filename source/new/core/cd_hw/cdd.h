@@ -35,10 +35,9 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  ****************************************************************************************/
-#ifndef _HW_CDD_
-#define _HW_CDD_
+#pragma once
 
-#include "blip_buf.h"
+#include "../sound/blip_buf.h"
 
 #if defined(USE_LIBVORBIS)
 #include <vorbis/vorbisfile.h>
@@ -50,6 +49,11 @@
 #include "libchdr/src/chd.h"
 #include "libchdr/src/cdrom.h"
 #endif
+
+/* CD tracks type (CD-DA by default) */
+#define TYPE_AUDIO 0x00
+#define TYPE_MODE1 0x01
+#define TYPE_MODE2 0x02
 
 #define cdd scd.cdd_hw
 
@@ -70,40 +74,13 @@
 #define CD_TRAY       0x0E  /* unused */
 #define CD_TEST       0x0F  /* unusec */
 
-#if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
-#define SUPPORTED_EXT 20
-#else
-#define SUPPORTED_EXT 10
-#endif
-
-/* CD blocks scanning speed */
-#define CD_SCAN_SPEED 30
-
-/* CD tracks type (CD-DA by default) */
-#define TYPE_AUDIO 0x00
-#define TYPE_MODE1 0x01
-#define TYPE_MODE2 0x02
-
-#define CD_MAX_TRACKS 100
-
-
-extern const uint8 lut_BCD_8[100];
-extern const uint16 lut_BCD_16[100];
-extern const uint16 toc_snatcher[21];
-extern const uint16 toc_lunar[52];
-extern const uint32 toc_shadow[15];
-extern const uint32 toc_dungeon[13];
-extern const uint32 toc_ffight[26];
-extern const uint32 toc_ffightj[29];
-extern const char extensions[SUPPORTED_EXT][16];
-
-
 /* CD track */
 typedef struct
 {
 #if defined(USE_LIBTREMOR) || defined(USE_LIBVORBIS)
   OggVorbis_File vf;
 #endif
+  int offset;
   int start;
   int end;
   int type;
@@ -120,11 +97,11 @@ typedef struct
 } toc_t; 
 
 #if defined(USE_LIBCHDR)
+
 /* CHD file */
 typedef struct
 {
-  chd_file *file;
-  uint8 *hunk;
+  uint8_t *hunk;
   int hunkbytes;
   int hunknum;
   int hunkofs;
@@ -134,42 +111,33 @@ typedef struct
 /* CDD hardware */
 typedef struct
 {
-  uint32 cycles;
-  uint32 latency;
+  uint32_t cycles;
+  uint32_t latency;
   int loaded;
   int index;
   int lba;
   int scanOffset;
-  uint16 fader[2];
-  uint8 status;
-  uint16 sectorSize;
+  uint16_t fader[2];
+  uint8_t status;
+  uint16_t sectorSize;
   toc_t toc;
 #if defined(USE_LIBCHDR)
   chd_t chd;
 #endif
-  int16 audio[2];
+  int16_t audio[2];
 } cdd_t; 
 
 /* Function prototypes */
 extern void cdd_init(int samplerate);
+extern void cdd_reset(void);
+extern int cdd_context_save(uint8_t *state);
+extern int cdd_context_load(uint8_t *state, char *version);
+extern int cdd_load(char *filename, char *header);
+extern void cdd_unload(void);
+extern void cdd_read_data(uint8_t *dst, uint8_t *subheader);
+extern void cdd_seek_audio(int index, int lba);
+extern void cdd_read_audio(unsigned int samples);
 extern void cdd_update_audio(unsigned int samples);
 extern void cdd_update(void);
 extern void cdd_process(void);
 
-// Externally implemented functions
-extern void cdd_reset(void);
-extern int cdd_context_save(uint8 *state);
-extern int cdd_context_load(uint8 *state, char *version);
-extern int cdd_load(const char *filename, char *header);
-extern void cdd_unload(void);
-extern void cdd_read_data(uint8 *dst, uint8 *subheader);
-extern void cdd_seek_audio(int index, int lba);
-extern void cdd_read_audio(unsigned int samples);
-extern void cdd_seek_toc(int lba);
-extern void cdd_read_toc(uint8 *dst, size_t size);
-
-// switch disks after emulation was started
-// pass NULL to open tray
-void cdd_hotswap(const toc_t *toc);
-
-#endif

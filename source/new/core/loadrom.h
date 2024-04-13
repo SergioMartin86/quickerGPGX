@@ -37,11 +37,12 @@
  *
  ****************************************************************************************/
 
-#ifndef _LOADROM_H_
-#define _LOADROM_H_
+#pragma once
+
+#include "types.h"
 
 #ifndef MAXROMSIZE
-#define MAXROMSIZE (32*1024*1024)
+#define MAXROMSIZE 10485760
 #endif
 
 typedef struct
@@ -57,21 +58,16 @@ typedef struct
   unsigned int romstart;        /* ROM start address */
   unsigned int romend;          /* ROM end address */
   char country[18];             /* Country flag */
-  uint16 peripherals;           /* Supported peripherals */
+  uint16_t peripherals;           /* Supported peripherals */
 } ROMINFO;
 
 
-/* Global variables */
-extern ROMINFO rominfo;
-extern uint8 romtype;
-
 /* Function prototypes */
 extern int load_bios(int system);
-extern int load_rom(const char *romFile, const char* primaryCD, const char* secondaryCD);
+extern int load_rom(char *filename);
 extern void get_region(char *romheader);
 extern char *get_company(void);
 extern char *get_peripheral(int index);
 extern void getrominfo(char *romheader);
 
-#endif /* _LOADROM_H_ */
 

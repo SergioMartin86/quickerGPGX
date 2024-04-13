@@ -39,49 +39,9 @@
  *
  ****************************************************************************************/
 
-#ifndef _VDP_H_
-#define _VDP_H_
+#pragma once
 
-/* VDP context */
-extern uint8 reg[0x20];
-extern uint8 sat[0x400];
-extern uint8 ALIGNED_(4) vram[0x10000];
-extern uint8 cram[0x80];
-extern uint8 vsram[0x80];
-extern uint8 hint_pending;
-extern uint8 vint_pending;
-extern uint16 status;
-extern uint32 dma_length;
-extern uint32 dma_endCycles;
-extern uint8 dma_type;
-
-/* Global variables */
-extern uint16 ntab;
-extern uint16 ntbb;
-extern uint16 ntwb;
-extern uint16 satb;
-extern uint16 hscb;
-extern uint8 bg_name_dirty[0x800];
-extern uint16 bg_name_list[0x800];
-extern uint16 bg_list_index;
-extern uint8 hscroll_mask;
-extern uint8 playfield_shift;
-extern uint8 playfield_col_mask;
-extern uint16 playfield_row_mask;
-extern uint8 odd_frame;
-extern uint8 im2_flag;
-extern uint8 interlaced;
-extern uint8 vdp_pal;
-extern uint8 h_counter;
-extern uint16 v_counter;
-extern uint16 vc_max;
-extern uint16 vscroll;
-extern uint16 lines_per_frame;
-extern uint16 max_sprite_pixels;
-extern uint32 fifo_cycles[4];
-extern uint32 hvc_latch;
-extern uint32 vint_cycle;
-extern const uint8 *hctab;
+#include <stdint.h>
 
 /* Function pointers */
 extern void (*vdp_68k_data_w)(unsigned int data);
@@ -92,8 +52,8 @@ extern unsigned int (*vdp_z80_data_r)(void);
 /* Function prototypes */
 extern void vdp_init(void);
 extern void vdp_reset(void);
-extern int vdp_context_save(uint8 *state);
-extern int vdp_context_load(uint8 *state);
+extern int vdp_context_save(uint8_t *state);
+extern int vdp_context_load(uint8_t *state);
 extern void vdp_dma_update(unsigned int cycles);
 extern void vdp_68k_ctrl_w(unsigned int data);
 extern void vdp_z80_ctrl_w(unsigned int data);
@@ -105,9 +65,23 @@ extern unsigned int vdp_hvc_r(unsigned int cycles);
 extern void vdp_test_w(unsigned int data);
 extern int vdp_68k_irq_ack(int int_level);
 
-void write_cram_byte(int addr, uint8 val);
-void write_vram_byte(int addr, uint8 val);
-void flush_vram_cache(void);
-void vdp_invalidate_full_cache(void);
+extern void (*const render_bg_modes[16])(int line);
 
-#endif /* _VDP_H_ */
+extern void vdp_68k_data_w_m4(unsigned int data);
+extern void vdp_68k_data_w_m5(unsigned int data);
+extern unsigned int vdp_68k_data_r_m4(void);
+extern unsigned int vdp_68k_data_r_m5(void);
+extern void vdp_z80_data_w_m4(unsigned int data);
+extern void vdp_z80_data_w_m5(unsigned int data);
+extern unsigned int vdp_z80_data_r_m4(void);
+extern unsigned int vdp_z80_data_r_m5(void);
+extern void vdp_z80_data_w_ms(unsigned int data);
+extern void vdp_z80_data_w_gg(unsigned int data);
+extern void vdp_z80_data_w_sg(unsigned int data);
+extern void vdp_bus_w(unsigned int data);
+extern void vdp_reg_w(unsigned int r, unsigned int d, unsigned int cycles);
+extern void vdp_dma_68k_ext(unsigned int length);
+extern void vdp_dma_68k_ram(unsigned int length);
+extern void vdp_dma_68k_io(unsigned int length);
+extern void vdp_dma_copy(unsigned int length);
+extern void vdp_dma_fill(unsigned int length);

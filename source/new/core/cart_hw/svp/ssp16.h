@@ -10,8 +10,7 @@
    Modified for Genesis Plus GX (Eke-Eke): added BIG ENDIAN support, fixed addr/code inversion
 */
 
-#ifndef _SSP16_H_
-#define _SSP16_H_
+#pragma once
 
 /* emulation event logging (from Picodrive) */
 #ifdef LOG_SVP
@@ -73,7 +72,10 @@ typedef struct
 } ssp1601_t;
 
 
+#define GET_PC() (PC - (unsigned short *)svp->iram_rom)
+#define GET_PPC_OFFS() ((unsigned char *)PC - svp->iram_rom - 2)
+#define SET_PC(d) PC = (unsigned short *)svp->iram_rom + d
+
 void ssp1601_reset(ssp1601_t *ssp);
 void ssp1601_run(int cycles);
 
-#endif

@@ -37,10 +37,13 @@
  *
  ****************************************************************************************/
 
-#include "shared.h"
-
-
-t_zbank_memory_map zbank_memory_map[256];
+#include "z80/z80.h"
+#include "sound/psg.h"
+#include "genesis.h"
+#include "vdp_ctrl.h"
+#include "membnk.h"
+#include "io_ctrl.h"
+#include "state.h"
 
 /*
   Handlers for access to unused addresses and those which make the
