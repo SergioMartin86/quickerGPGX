@@ -37,6 +37,7 @@
 #include "areplay.h"
 #include "svp.h"
 #include "state.h"
+#include "scrc32.h"
 
 #endif /* _SHARED_H_ */
 
