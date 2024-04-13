@@ -50,8 +50,6 @@
 #define cart ext.md_cart
 #endif
 
-#define MAXROMSIZE (32*1024*1024)
-
 /* Lock-On cartridge type */
 #define TYPE_GG 0x01  /* Game Genie */
 #define TYPE_AR 0x02  /* (Pro) Action Replay */

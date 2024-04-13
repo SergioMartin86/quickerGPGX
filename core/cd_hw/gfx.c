@@ -309,7 +309,7 @@ void gfx_init(void)
   uint8 mask, row, col, temp;
 
   memset(&gfx, 0, sizeof(gfx_t));
-  
+
   /* Initialize cell image lookup table */
   /* $220000-$22FFFF corresponds to $200000-$20FFFF */
   for (i=0; i<0x4000; i++)

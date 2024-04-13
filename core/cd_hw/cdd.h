@@ -144,6 +144,9 @@ typedef struct
   uint8 status;
   uint16 sectorSize;
   toc_t toc;
+#if defined(USE_LIBCHDR)
+  chd_t chd;
+#endif
   int16 audio[2];
 } cdd_t; 
 
