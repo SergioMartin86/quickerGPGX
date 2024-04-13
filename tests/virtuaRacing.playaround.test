@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Virtua Racing (U) [!].bin",
+  "Expected ROM SHA1": "FF969AE53120CC4E7CB1A8A7E47458F2EB8A2165",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Genesis",
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

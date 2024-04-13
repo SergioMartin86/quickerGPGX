@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/mai_nurse_v1.00.sms",
+  "Expected ROM SHA1": "770A8B571AF0B8C16C1BDE88311B14984AA7F38E",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Master System",
+  "Controller 1 Type": "Gamepad2B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

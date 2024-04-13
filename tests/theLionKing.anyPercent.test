@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Lion King, The (W) [!].bin",
+  "Expected ROM SHA1": "24CBE4E75EC10E8E0FFBDB400CF86ECB072D4DA9",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Genesis",
+  "Controller 1 Type": "Gamepad6B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

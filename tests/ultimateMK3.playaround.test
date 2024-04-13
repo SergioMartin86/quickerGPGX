@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Ultimate Mortal Kombat 3 (USA).md",
+  "Expected ROM SHA1": "BF2DA4A7AE7AA428B0B316581F65B280DC3BA356",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Genesis",
+  "Controller 1 Type": "Gamepad6B",
+  "Controller 2 Type": "Gamepad6B",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}
