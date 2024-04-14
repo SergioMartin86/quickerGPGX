@@ -33,7 +33,7 @@ typedef struct
   uint8_t padtype;
 } t_input_config;
 
-typedef struct config_t
+struct config_t
 {
   uint8_t hq_fm;
   uint8_t filter;

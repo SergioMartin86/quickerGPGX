@@ -553,7 +553,7 @@ int load_bios(int system)
  * Return 0 on error, 1 on success
  *
  ***************************************************************************/
-int load_rom(char *filename)
+int load_rom(const char *filename)
 {
   int i, size;
 

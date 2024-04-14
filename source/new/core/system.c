@@ -193,7 +193,7 @@ void audio_shutdown(void)
 
 int audio_update(int16_t *buffer)
 {
-  int size = sound_update(mcycles_vdp);
+  sound_update(mcycles_vdp);
 
 
   return 0;

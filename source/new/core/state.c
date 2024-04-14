@@ -314,6 +314,27 @@ __thread object_info_t obj_info[2][MAX_SPRITES_PER_LINE];
 __thread uint8_t object_count[2]; /* Sprite Counter */
 __thread uint16_t spr_col; /* Sprite Collision Info */
 
+int scd_context_save(uint8 *state);
+int scd_context_load(uint8 *state, char *version);
+int vdp_context_save(uint8 *state);
+int vdp_context_load(uint8 *state);
+int sms_cart_context_save(uint8 *state);
+int cdc_context_save(uint8 *state);
+int cdc_context_load(uint8 *state);
+int sound_context_save(uint8 *state);
+int sound_context_load(uint8 *state);
+int pcm_context_save(uint8 *state);
+int pcm_context_load(uint8 *state);
+int gfx_context_save(uint8 *state);
+int gfx_context_load(uint8 *state);
+int cdd_context_save(uint8 *state);
+int cdd_context_load(uint8 *state, char *version);
+int sms_cart_context_load(uint8 *state);
+int megasd_context_save(uint8 *state);
+int megasd_context_load(uint8 *state);
+int md_cart_context_save(uint8 *state);
+int md_cart_context_load(uint8 *state);
+
 
 int scd_context_save(uint8 *state)
 {

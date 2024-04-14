@@ -359,13 +359,10 @@ int sound_update(unsigned int cycles)
   /* FM chip is enabled ? */
   if (YM_Update)
   {
-    int prev_l, prev_r, preamp, time, l, r, *ptr;
+    int prev_l, prev_r, time;
 
     /* Run FM chip until end of frame */
     fm_update(cycles);
-
-    /* FM output pre-amplification */
-    preamp = config.fm_preamp;
 
     /* FM frame initial timestamp */
     time = fm_cycles_start;
@@ -373,9 +370,6 @@ int sound_update(unsigned int cycles)
     /* Restore last FM outputs from previous frame */
     prev_l = fm_last[0];
     prev_r = fm_last[1];
-
-    /* FM buffer start pointer */
-    ptr = fm_buffer;
 
     /* reset FM buffer pointer */
     fm_ptr = fm_buffer;

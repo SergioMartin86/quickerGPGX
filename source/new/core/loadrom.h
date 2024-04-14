@@ -42,7 +42,7 @@
 #include "types.h"
 
 #ifndef MAXROMSIZE
-#define MAXROMSIZE 10485760
+#define MAXROMSIZE 32 * 1024 * 1024
 #endif
 
 typedef struct
@@ -64,7 +64,7 @@ typedef struct
 
 /* Function prototypes */
 extern int load_bios(int system);
-extern int load_rom(char *filename);
+extern int load_rom(const char *filename);
 extern void get_region(char *romheader);
 extern char *get_company(void);
 extern char *get_peripheral(int index);

@@ -55,8 +55,6 @@ static const uint8_t noiseShiftWidth[2] = {14,15};
 
 static const uint8_t noiseBitMask[2] = {0x6,0x9};
 
-static const uint8_t noiseFeedback[10] = {0,1,1,0,1,0,0,1,1,0};
-
 static const uint16_t chanVolume[16] = {
   PSG_MAX_VOLUME,               /*  MAX  */
   PSG_MAX_VOLUME * 0.794328234, /* -2dB  */
@@ -75,8 +73,6 @@ static const uint16_t chanVolume[16] = {
   PSG_MAX_VOLUME * 0.039810717, /* -28dB */
   0                             /*  OFF  */
 };
-
-static void psg_update(unsigned int clocks);
 
 void psg_init(PSG_TYPE type)
 {
@@ -358,119 +354,3 @@ void psg_end_frame(unsigned int clocks)
     psg.freqCounter[i] -= clocks;
   }
 }
-
-static void psg_update(unsigned int clocks)
-{
-  int i, timestamp, polarity;
-
-  for (i=0; i<4; i++)
-  {
-    /* apply any pending channel volume variations */
-    if (psg.chanDelta[i][0] | psg.chanDelta[i][1])
-    {
-      /* update channel output */
-      if (config.hq_psg)
-      {
-        blip_add_delta(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
-      }
-      else
-      {
-        blip_add_delta_fast(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
-      }
-
-      /* clear pending channel volume variations */
-      psg.chanDelta[i][0] = 0;
-      psg.chanDelta[i][1] = 0;
-    }
-
-    /* timestamp of next transition */
-    timestamp = psg.freqCounter[i];
-
-    /* current channel generator polarity */
-    polarity = psg.polarity[i];
-
-    /* Tone channels */
-    if (i < 3)
-    {
-      /* process all transitions occurring until current clock timestamp */
-      while (timestamp < clocks)
-      {
-        /* invert tone generator polarity */
-        polarity = -polarity;
-
-        /* update channel output */
-        if (config.hq_psg)
-        {
-          blip_add_delta(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
-        }
-        else
-        {
-          blip_add_delta_fast(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
-        }
-
-        /* timestamp of next transition */
-        timestamp += psg.freqInc[i];
-      }
-    }
-
-    /* Noise channel */
-    else
-    {
-      /* current noise shift register value */
-      int shiftValue = psg.noiseShiftValue;
-
-      /* process all transitions occurring until current clock timestamp */
-      while (timestamp < clocks)
-      {
-        /* invert noise generator polarity */
-        polarity = -polarity;
-
-        /* noise register is shifted on positive edge only */
-        if (polarity > 0)
-        {
-          /* current shift register output */
-          int shiftOutput = shiftValue & 0x01;
-
-          /* White noise (-----1xx) */
-          if (psg.regs[6] & 0x04)
-          {
-            /* shift and apply XOR feedback network */
-            shiftValue = (shiftValue >> 1) | (noiseFeedback[shiftValue & psg.noiseBitMask] << psg.noiseShiftWidth);
-          }
-
-          /* Periodic noise (-----0xx) */
-          else
-          {
-            /* shift and feedback current output */
-            shiftValue = (shiftValue >> 1) | (shiftOutput << psg.noiseShiftWidth);
-          }
-
-          /* shift register output variation */
-          shiftOutput = (shiftValue & 0x1) - shiftOutput;
-
-          /* update noise channel output */
-          if (config.hq_psg)
-          {
-            blip_add_delta(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
-          }
-          else
-          {
-            blip_add_delta_fast(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
-          }
-        }
-
-        /* timestamp of next transition */
-        timestamp += psg.freqInc[3];
-      }
-
-      /* save shift register value */
-      psg.noiseShiftValue = shiftValue;
-    }
-
-    /* save timestamp of next transition */
-    psg.freqCounter[i] = timestamp;
-
-    /* save channel generator polarity */
-    psg.polarity[i] = polarity;
-  }
-}  

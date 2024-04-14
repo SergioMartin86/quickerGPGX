@@ -132,7 +132,7 @@ extern void cdd_init(int samplerate);
 extern void cdd_reset(void);
 extern int cdd_context_save(uint8_t *state);
 extern int cdd_context_load(uint8_t *state, char *version);
-extern int cdd_load(char *filename, char *header);
+extern int cdd_load(const char *filename, char *header);
 extern void cdd_unload(void);
 extern void cdd_read_data(uint8_t *dst, uint8_t *subheader);
 extern void cdd_seek_audio(int index, int lba);

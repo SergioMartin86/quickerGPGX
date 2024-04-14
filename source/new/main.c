@@ -12,6 +12,11 @@
 #define VIDEO_WIDTH  320
 #define VIDEO_HEIGHT 240
 
+#define FREAD(BUFFER, ESIZE, ECOUNT, FILEP) { int status = fread(BUFFER, ESIZE, ECOUNT, FILEP); if (status != 0) fprintf(stderr, "Error reading file\n"); }
+
+extern size_t state_save(uint8_t* buffer);
+extern void state_load(const uint8_t* buffer);
+
 char GG_ROM[256];
 char AR_ROM[256];
 char SK_ROM[256];
@@ -63,7 +68,15 @@ struct {
 };
 
 
- short soundframe[SOUND_SAMPLES_SIZE];
+short soundframe[SOUND_SAMPLES_SIZE];
+
+__thread t_input* __tmpInput = NULL;
+
+int sdl_input_update(void)
+{
+  input = *__tmpInput;
+  return 0;
+}
 
 void osd_input_update(void)
 {
@@ -453,7 +466,7 @@ struct {
         if (f)
         {
           uint8 buf[STATE_SIZE];
-          fread(&buf, STATE_SIZE, 1, f);
+          FREAD(&buf, STATE_SIZE, 1, f);
           state_load(buf);
           fclose(f);
         }
@@ -570,16 +583,12 @@ struct {
 
    return 1;
 }
-
-__thread t_input* __tmpInput = NULL;
-
 void initialize ()
 {
   __tmpInput = (t_input*) calloc (1, sizeof(t_input));
   __tmpInput->dev[0] = 0;  
   __tmpInput->dev[1] = 255;
 
-  int running = 1;
   bitmap.data = malloc(1024*1024*4);
 
   /* set default config */
@@ -610,7 +619,7 @@ void initialize ()
     int i;
 
     /* read BOOT ROM */
-    fread(boot_rom, 1, 0x800, fp);
+    FREAD(boot_rom, 1, 0x800, fp);
     fclose(fp);
 
     /* check BOOT ROM */
@@ -636,7 +645,7 @@ void initializeVideoOutput()
   if(SDL_Init(0) < 0)
   {
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "SDL initialization failed", sdl_video.window);
-    return 1;
+    return;
   }
   sdl_video_init();
   if (use_sound) sdl_sound_init();
@@ -671,7 +680,7 @@ void loadROM(const char* filePath)
       char caption[256];
       sprintf(caption, "Error loading file `%s'.", filePath);
       SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", caption, sdl_video.window);
-      return 1;
+      return;
     }
 
     /* initialize system hardware */
@@ -685,7 +694,7 @@ void loadROM(const char* filePath)
       fp = fopen("./scd.brm", "rb");
       if (fp!=NULL)
       {
-        fread(scd.bram, 0x2000, 1, fp);
+        FREAD(scd.bram, 0x2000, 1, fp);
         fclose(fp);
       }
 
@@ -709,7 +718,7 @@ void loadROM(const char* filePath)
         fp = fopen("./cart.brm", "rb");
         if (fp!=NULL)
         {
-          fread(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
+          FREAD(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
           fclose(fp);
         }
 
@@ -735,7 +744,7 @@ void loadROM(const char* filePath)
       fp = fopen("./game.srm", "rb");
       if (fp!=NULL)
       {
-        fread(sram.sram,0x10000,1, fp);
+        FREAD(sram.sram,0x10000,1, fp);
         fclose(fp);
       }
     }
@@ -750,12 +759,6 @@ void renderFrame()
 {
   sdl_video_update();
   sdl_sound_update(use_sound);
-}
-
-int sdl_input_update(void)
-{
-  input = *__tmpInput;
-  return 0;
 }
 
 void advanceFrame(const uint16_t controller1, const uint16_t controller2)
@@ -815,7 +818,7 @@ int oldMain (int argc, char **argv)
     int i;
 
     /* read BOOT ROM */
-    fread(boot_rom, 1, 0x800, fp);
+    FREAD(boot_rom, 1, 0x800, fp);
     fclose(fp);
 
     /* check BOOT ROM */
@@ -882,7 +885,7 @@ int oldMain (int argc, char **argv)
     fp = fopen("./scd.brm", "rb");
     if (fp!=NULL)
     {
-      fread(scd.bram, 0x2000, 1, fp);
+      FREAD(scd.bram, 0x2000, 1, fp);
       fclose(fp);
     }
 
@@ -906,7 +909,7 @@ int oldMain (int argc, char **argv)
       fp = fopen("./cart.brm", "rb");
       if (fp!=NULL)
       {
-        fread(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
+        FREAD(scd.cartridge.area, scd.cartridge.mask + 1, 1, fp);
         fclose(fp);
       }
 
@@ -932,7 +935,7 @@ int oldMain (int argc, char **argv)
     fp = fopen("./game.srm", "rb");
     if (fp!=NULL)
     {
-      fread(sram.sram,0x10000,1, fp);
+      FREAD(sram.sram,0x10000,1, fp);
       fclose(fp);
     }
   }
