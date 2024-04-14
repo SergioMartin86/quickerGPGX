@@ -38,6 +38,12 @@ class EmuInstance : public EmuInstanceBase
 
  EmuInstance() : EmuInstanceBase()
  {
+  _dummyBuffer = (uint8_t*) malloc(DUMMY_SIZE);
+ }
+
+ ~EmuInstance()
+ {
+  free(_dummyBuffer);
  }
 
   virtual void initialize() override
@@ -72,22 +78,19 @@ class EmuInstance : public EmuInstanceBase
 
   void serializeState(jaffarCommon::serializer::Base& s) const override
   {
-    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
-    auto size = ::state_save(buffer);
-    s.push(buffer, size);
-    free (buffer);
+    auto size = ::state_save(_dummyBuffer);
+    s.push(_dummyBuffer, size);
   }
 
   void deserializeState(jaffarCommon::deserializer::Base& d) override
   {
-    ::state_load((unsigned char*)d.getInputDataBuffer());
+    int size = ::state_load((unsigned char*)d.getInputDataBuffer());
+    d.popContiguous(nullptr, size);
   }
 
   size_t getStateSizeImpl() const override
   {
-    auto buffer = (uint8_t*) malloc(DUMMY_SIZE);
-    auto size = ::state_save(buffer);
-    free (buffer);
+    auto size = ::state_save(_dummyBuffer);
     return size;
   }
 
@@ -139,6 +142,10 @@ class EmuInstance : public EmuInstanceBase
   {
     return 0x10000;
   }
+
+  private:
+
+  uint8_t* _dummyBuffer;
 
 };
 
