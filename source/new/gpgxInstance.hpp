@@ -135,6 +135,11 @@ class EmuInstance : public EmuInstanceBase
     return getWorkRamPtr();
   }
 
+  inline size_t getWorkRamSize() const 
+  {
+    return 0x10000;
+  }
+
 };
 
 } // namespace gpgx
