@@ -125,6 +125,7 @@ baseGPGXIncludeDirs = [
 
 baseGPGXCompileArgs = [
   '-D_GPGX_LSB_FIRST',
+  '-DLSB_FIRST',
   '-DUSE_16BPP_RENDERING',
   '-DUSE_LIBTREMOR',
   '-DUSE_LIBCHDR',
