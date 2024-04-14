@@ -518,7 +518,7 @@ static void megasd_ctrl_write_word(unsigned int address, unsigned int data)
                 /* command 1Ah specifies track loop offset in data buffer (32-bit value stored in big-endian format) */
                 if ((data >> 8) == 0x1a)
                 {
-#ifndef LSB_FIRST 
+#ifndef _GPGX_LSB_FIRST 
                   megasd_hw.playbackLoopSector = cdd.toc.tracks[index].start + *(unsigned int *)(megasd_hw.buffer);
 #else
                   megasd_hw.playbackLoopSector = cdd.toc.tracks[index].start + (megasd_hw.buffer[0] << 24) + (megasd_hw.buffer[1] << 16) + (megasd_hw.buffer[2] << 8) + megasd_hw.buffer[3];
@@ -618,7 +618,7 @@ static void megasd_ctrl_write_word(unsigned int address, unsigned int data)
           if (cdd.loaded && cdd.toc.tracks[0].type)
           {
             /* get LBA from command buffer (32-bit value stored in big-endian format) */
-#ifndef LSB_FIRST 
+#ifndef _GPGX_LSB_FIRST 
             int lba = *(unsigned int *)(megasd_hw.buffer) - 150;
 #else
             int lba = (megasd_hw.buffer[0] << 24) + (megasd_hw.buffer[1] << 16) + (megasd_hw.buffer[2] << 8) + megasd_hw.buffer[3] - 150;
@@ -674,7 +674,7 @@ static void megasd_ctrl_write_word(unsigned int address, unsigned int data)
           if (cdd.loaded)
           {
             /* get playback start sector from command buffer (32-bit value in big-endian format) */
-#ifndef LSB_FIRST
+#ifndef _GPGX_LSB_FIRST
             int lba = *(unsigned int *)(megasd_hw.buffer) - 150;
 #else
             int lba = (megasd_hw.buffer[0] << 24) + (megasd_hw.buffer[1] << 16) + (megasd_hw.buffer[2] << 8) + megasd_hw.buffer[3] - 150;
@@ -717,7 +717,7 @@ static void megasd_ctrl_write_word(unsigned int address, unsigned int data)
               }
 
               /* get playback end sector from command buffer (32-bit value in big-endian format) */
-#ifndef LSB_FIRST 
+#ifndef _GPGX_LSB_FIRST 
               megasd_hw.playbackEndSector = *(unsigned int *)(megasd_hw.buffer + 4) - 150;
 #else
               megasd_hw.playbackEndSector = (megasd_hw.buffer[4] << 24) + (megasd_hw.buffer[5] << 16) + (megasd_hw.buffer[6] << 8) + megasd_hw.buffer[7] - 150;
@@ -775,7 +775,7 @@ static void megasd_ctrl_write_word(unsigned int address, unsigned int data)
                 if (megasd_hw.playbackLoop)
                 {
                   /* get playback loop sector from data buffer (32-bit value in big-endian format) */
-#ifndef LSB_FIRST 
+#ifndef _GPGX_LSB_FIRST 
                   megasd_hw.playbackLoopSector = *(unsigned int *)(megasd_hw.buffer + 8) - 150;
 #else
                   megasd_hw.playbackLoopSector = (megasd_hw.buffer[8] << 24) + (megasd_hw.buffer[9] << 16) + (megasd_hw.buffer[10] << 8) + megasd_hw.buffer[11] - 150;

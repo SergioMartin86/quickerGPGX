@@ -7,7 +7,7 @@ typedef union
     uint16_t w;
     struct
     {
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
         uint8_t l;
         uint8_t h;
 #else

@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
 
 #define READ_BYTE(BASE, ADDR) (BASE)[(ADDR)^1]
 

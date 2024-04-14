@@ -104,7 +104,7 @@ void areplay_init(void)
       }
     }
 
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
     if (action_replay.enabled)
     {
       int i;

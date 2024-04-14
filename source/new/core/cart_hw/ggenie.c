@@ -59,7 +59,7 @@ void ggenie_init(void)
   /* Try to load Game Genie ROM file (32KB) */
   if (load_archive(GG_ROM, cart.lockrom, 0x8000, NULL) > 0)
   {
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
     int i;
     for (i=0; i<0x8000; i+=2)
     {

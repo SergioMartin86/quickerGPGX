@@ -31,7 +31,7 @@ typedef union
 {
   unsigned int v;
   struct {
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
   unsigned short l;
   unsigned short h;
 #else

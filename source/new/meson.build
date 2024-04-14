@@ -64,7 +64,7 @@ newGPGXIncludeDirs = [
 ]
 
 newGPGXCompileArgs = [
-  '-DLSB_FIRST',
+  '-D_GPGX_LSB_FIRST',
   '-DUSE_32BPP_RENDERING',
   '-DMAXROMSIZE=33554432',
   '-DHAVE_YM3438_CORE',

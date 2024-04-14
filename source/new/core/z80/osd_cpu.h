@@ -28,7 +28,7 @@
  ******************************************************************************/
 
 typedef union {
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
   struct { uint8_t l,h,h2,h3; } b;
   struct { uint16_t l,h; } w;
 #else

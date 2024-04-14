@@ -147,7 +147,7 @@ INLINE uint32_t READ_LONG(void *address)
 {
   if ((uint32_t)address & 3)
   {
-#ifdef LSB_FIRST  /* little endian version */
+#ifdef _GPGX_LSB_FIRST  /* little endian version */
     return ( *((uint8_t *)address) +
         (*((uint8_t *)address+1) << 8)  +
         (*((uint8_t *)address+2) << 16) +
@@ -157,7 +157,7 @@ INLINE uint32_t READ_LONG(void *address)
         (*((uint8_t *)address+2) << 8)  +
         (*((uint8_t *)address+1) << 16) +
         (*((uint8_t *)address)   << 24) );
-#endif  /* LSB_FIRST */
+#endif  /* _GPGX_LSB_FIRST */
   }
   else return *(uint32_t *)address;
 }
@@ -166,7 +166,7 @@ INLINE void WRITE_LONG(void *address, uint32_t data)
 {
   if ((uint32_t)address & 3)
   {
-#ifdef LSB_FIRST
+#ifdef _GPGX_LSB_FIRST
       *((uint8_t *)address) =  data;
       *((uint8_t *)address+1) = (data >> 8);
       *((uint8_t *)address+2) = (data >> 16);
@@ -176,7 +176,7 @@ INLINE void WRITE_LONG(void *address, uint32_t data)
       *((uint8_t *)address+2) = (data >> 8);
       *((uint8_t *)address+1) = (data >> 16);
       *((uint8_t *)address)   = (data >> 24);
-#endif /* LSB_FIRST */
+#endif /* _GPGX_LSB_FIRST */
     return;
   }
   else *(uint32_t *)address = data;

@@ -8,10 +8,6 @@
 #include <jaffarCommon/serializers/contiguous.hpp>
 #include <jaffarCommon/deserializers/contiguous.hpp>
 
-typedef  uint8_t uint8;
-typedef  uint16_t uint16;
-typedef  int8_t int16;
-
 #include "controller.hpp"
 
 namespace gpgx
