@@ -49,8 +49,8 @@ __thread T_SRAM sram;
 
 // cart_hw/sms_cart.h
 
-romhw_t cart_rom;
-romhw_t bios_rom;
+__thread romhw_t cart_rom;
+__thread romhw_t bios_rom;
 
 // cd_hw/cdc.h
 

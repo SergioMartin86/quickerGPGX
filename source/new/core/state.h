@@ -108,8 +108,8 @@ extern __thread T_MEGASD_HW megasd_hw;
 
 // cart_hw/sms_cart.h
 
-extern romhw_t cart_rom;
-extern romhw_t bios_rom;
+extern __thread romhw_t cart_rom;
+extern __thread romhw_t bios_rom;
 
 // cart_hw/sram.h
 
