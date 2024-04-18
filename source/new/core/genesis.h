@@ -46,7 +46,7 @@
 #include "cd_hw/scd.h"
 
 /* External Hardware */
-typedef union
+typedef struct
 {
   md_cart_t md_cart;
   cd_hw_t cd_hw;
