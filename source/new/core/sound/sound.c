@@ -102,7 +102,7 @@ static void YM2612_Write(unsigned int cycles, unsigned int a, unsigned int v)
   }
 
   /* write FM register */
-  //YM2612Write(a, v);
+  YM2612Write(a, v);
 }
 
 static unsigned int YM2612_Read(unsigned int cycles, unsigned int a)
@@ -359,10 +359,13 @@ int sound_update(unsigned int cycles)
   /* FM chip is enabled ? */
   if (YM_Update)
   {
-    int prev_l, prev_r, time;
+    int prev_l, prev_r, preamp, time, l, r, *ptr;
 
     /* Run FM chip until end of frame */
     fm_update(cycles);
+
+    /* FM output pre-amplification */
+    preamp = config.fm_preamp;
 
     /* FM frame initial timestamp */
     time = fm_cycles_start;
@@ -370,6 +373,45 @@ int sound_update(unsigned int cycles)
     /* Restore last FM outputs from previous frame */
     prev_l = fm_last[0];
     prev_r = fm_last[1];
+
+    /* FM buffer start pointer */
+    ptr = fm_buffer;
+
+    /* flush FM samples */
+    if (config.hq_fm)
+    {
+      /* high-quality Band-Limited synthesis */
+      do
+      {
+        /* left & right channels */
+        l = ((*ptr++ * preamp) / 100);
+        r = ((*ptr++ * preamp) / 100);
+        blip_add_delta(snd.blips[0], time, l-prev_l, r-prev_r);
+        prev_l = l;
+        prev_r = r;
+
+        /* increment time counter */
+        time += fm_cycles_ratio;
+      }
+      while (time < cycles);
+    }
+    else
+    {
+      /* faster Linear Interpolation */
+      do
+      {
+        /* left & right channels */
+        l = ((*ptr++ * preamp) / 100);
+        r = ((*ptr++ * preamp) / 100);
+        blip_add_delta_fast(snd.blips[0], time, l-prev_l, r-prev_r);
+        prev_l = l;
+        prev_r = r;
+
+        /* increment time counter */
+        time += fm_cycles_ratio;
+      }
+      while (time < cycles);
+    }
 
     /* reset FM buffer pointer */
     fm_ptr = fm_buffer;
@@ -390,7 +432,10 @@ int sound_update(unsigned int cycles)
     }
   }
 
+  /* end of blip buffer time frame */
+  blip_end_frame(snd.blips[0], cycles);
+
   /* return number of available samples */
-  return 0;
+  return blip_samples_avail(snd.blips[0]);
 }
 
