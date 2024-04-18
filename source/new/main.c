@@ -591,6 +591,7 @@ void initialize ()
 
   bitmap.data = malloc(1024*1024*4);
 
+
   /* set default config */
   set_config_defaults();
 

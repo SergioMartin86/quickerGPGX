@@ -445,11 +445,11 @@ void psg_update(unsigned int clocks)
       /* update channel output */
       if (config.hq_psg)
       {
-        blip_add_delta(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
+        // blip_add_delta(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
       }
       else
       {
-        blip_add_delta_fast(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
+        // blip_add_delta_fast(snd.blips[0], psg.clocks, psg.chanDelta[i][0], psg.chanDelta[i][1]);
       }
 
       /* clear pending channel volume variations */
@@ -466,25 +466,26 @@ void psg_update(unsigned int clocks)
     /* Tone channels */
     if (i < 3)
     {
+      timestamp = clocks;
       /* process all transitions occurring until current clock timestamp */
-      while (timestamp < clocks)
-      {
-        /* invert tone generator polarity */
-        polarity = -polarity;
+      // while (timestamp < clocks)
+      // {
+      //   /* invert tone generator polarity */
+      //   polarity = -polarity;
 
-        /* update channel output */
-        if (config.hq_psg)
-        {
-          blip_add_delta(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
-        }
-        else
-        {
-          blip_add_delta_fast(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
-        }
+      //   /* update channel output */
+      //   if (config.hq_psg)
+      //   {
+      //     // blip_add_delta(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
+      //   }
+      //   else
+      //   {
+      //     // blip_add_delta_fast(snd.blips[0], timestamp, polarity*psg.chanOut[i][0], polarity*psg.chanOut[i][1]);
+      //   }
 
-        /* timestamp of next transition */
-        timestamp += psg.freqInc[i];
-      }
+      //   /* timestamp of next transition */
+      //   timestamp += psg.freqInc[i];
+      // }
     }
 
     /* Noise channel */
@@ -494,48 +495,49 @@ void psg_update(unsigned int clocks)
       int shiftValue = psg.noiseShiftValue;
 
       /* process all transitions occurring until current clock timestamp */
-      while (timestamp < clocks)
-      {
-        /* invert noise generator polarity */
-        polarity = -polarity;
+      timestamp = clocks;
+      // while (timestamp < clocks)
+      // {
+      //   /* invert noise generator polarity */
+      //   polarity = -polarity;
 
-        /* noise register is shifted on positive edge only */
-        if (polarity > 0)
-        {
-          /* current shift register output */
-          int shiftOutput = shiftValue & 0x01;
+      //   /* noise register is shifted on positive edge only */
+      //   if (polarity > 0)
+      //   {
+      //     /* current shift register output */
+      //     int shiftOutput = shiftValue & 0x01;
 
-          /* White noise (-----1xx) */
-          if (psg.regs[6] & 0x04)
-          {
-            /* shift and apply XOR feedback network */
-            // shiftValue = (shiftValue >> 1) | (noiseFeedback[shiftValue & psg.noiseBitMask] << psg.noiseShiftWidth);
-          }
+      //     /* White noise (-----1xx) */
+      //     if (psg.regs[6] & 0x04)
+      //     {
+      //       /* shift and apply XOR feedback network */
+      //       // shiftValue = (shiftValue >> 1) | (noiseFeedback[shiftValue & psg.noiseBitMask] << psg.noiseShiftWidth);
+      //     }
 
-          /* Periodic noise (-----0xx) */
-          else
-          {
-            /* shift and feedback current output */
-            shiftValue = (shiftValue >> 1) | (shiftOutput << psg.noiseShiftWidth);
-          }
+      //     /* Periodic noise (-----0xx) */
+      //     else
+      //     {
+      //       /* shift and feedback current output */
+      //       shiftValue = (shiftValue >> 1) | (shiftOutput << psg.noiseShiftWidth);
+      //     }
 
-          /* shift register output variation */
-          shiftOutput = (shiftValue & 0x1) - shiftOutput;
+      //     /* shift register output variation */
+      //     shiftOutput = (shiftValue & 0x1) - shiftOutput;
 
-          /* update noise channel output */
-          if (config.hq_psg)
-          {
-            blip_add_delta(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
-          }
-          else
-          {
-            blip_add_delta_fast(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
-          }
-        }
+      //     /* update noise channel output */
+      //     if (config.hq_psg)
+      //     {
+      //       // blip_add_delta(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
+      //     }
+      //     else
+      //     {
+      //       // blip_add_delta_fast(snd.blips[0], timestamp, shiftOutput*psg.chanOut[3][0], shiftOutput*psg.chanOut[3][1]);
+      //     }
+      //   }
 
-        /* timestamp of next transition */
-        timestamp += psg.freqInc[3];
-      }
+      //   /* timestamp of next transition */
+      //   timestamp += psg.freqInc[3];
+      // }
 
       /* save shift register value */
       psg.noiseShiftValue = shiftValue;

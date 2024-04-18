@@ -71,6 +71,7 @@ extern void psg_init(PSG_TYPE type);
 extern void psg_reset(void);
 extern int psg_context_save(uint8_t *state);
 extern int psg_context_load(uint8_t *state);
+void psg_update(unsigned int clocks);
 extern void psg_write(unsigned int clocks, unsigned int data);
 extern void psg_config(unsigned int clocks, unsigned int preamp, unsigned int panning);
 extern void psg_end_frame(unsigned int clocks);
