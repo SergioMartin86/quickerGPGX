@@ -14,6 +14,7 @@ protectedTestSet = [
   'ultimateMK3.playaround',
   'throne.playaround',
   'sonic.playaround',
+  'gargoyles.playaround',
 ]
 
 # Tests for open source free roms (for public cloud testing)
@@ -44,6 +45,26 @@ endforeach
 # Testing save start
 
 testFile = 'drunkasilike.savestart'
+testSuite = testFile.split('.')[0]
+testName = testFile.split('.')[1]
+test(testName,
+       newGPGXTester,
+       workdir : meson.current_source_dir(),
+       timeout: testTimeout,
+       args : [  testFile + '.test', testFile + '.sol', '--cycleType', 'Rerecord' ],
+       suite : [ testSuite ])
+
+testFile = 'dinoRunner.savestart'
+testSuite = testFile.split('.')[0]
+testName = testFile.split('.')[1]
+test(testName,
+       newGPGXTester,
+       workdir : meson.current_source_dir(),
+       timeout: testTimeout,
+       args : [  testFile + '.test', testFile + '.sol', '--cycleType', 'Rerecord' ],
+       suite : [ testSuite ])
+
+testFile = 'sonic.savestart'
 testSuite = testFile.split('.')[0]
 testName = testFile.split('.')[1]
 test(testName,

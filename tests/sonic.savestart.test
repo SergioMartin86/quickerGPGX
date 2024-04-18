@@ -1,7 +1,7 @@
 {
-  "Rom File": "roms/Dino-Runner.bin",
-  "Expected ROM SHA1": "0392D3D443B6A5738657A7823DFF8DAD67738E41",
-  "Initial State File": "dinoRunner.playaround.state",
+  "Rom File": "roms/Sonic The Hedgehog (W) (REV01) [!].bin",
+  "Expected ROM SHA1": "69E102855D4389C3FD1A8F3DC7D193F8EEE5FE5B",
+  "Initial State File": "sonic.savestart.state",
   "Disable State Blocks": [ "SATM", "VRAM" ],
   "System Type": "Sega Genesis",
   "Controller 1 Type": "Gamepad3B",
