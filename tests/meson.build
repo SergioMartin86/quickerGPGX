@@ -64,6 +64,8 @@ test(testName,
        args : [  testFile + '.test', testFile + '.sol', '--cycleType', 'Rerecord' ],
        suite : [ testSuite ])
 
+if get_option('onlyOpenSource') == false
+
 testFile = 'sonic.savestart'
 testSuite = testFile.split('.')[0]
 testName = testFile.split('.')[1]
@@ -74,3 +76,4 @@ test(testName,
        args : [  testFile + '.test', testFile + '.sol', '--cycleType', 'Rerecord' ],
        suite : [ testSuite ])
 
+endif
