@@ -1,11 +1,11 @@
 #include <string.h>
 #include "state.h"
 
-uint8_t VRAMBlockEnabled = 1;
+__thread uint8_t VRAMBlockEnabled = 1;
 void enableVRAMBlock() { VRAMBlockEnabled = 1; };
 void disableVRAMBlock() { VRAMBlockEnabled = 0; };
 
-uint8_t SATMBlockEnabled = 1;
+__thread uint8_t SATMBlockEnabled = 1;
 void enableSATMBlock() { SATMBlockEnabled = 1; };
 void disableSATMBlock() { SATMBlockEnabled = 0; };
 
