@@ -1,10 +1,10 @@
-GPGX Compare
+QuickerGPGX
 --------------
 
 [![Build & Tests](https://github.com/SergioMartin86/quickerGPGX/actions/workflows/make.yml/badge.svg)](https://github.com/SergioMartin86/quickerGPGX/actions/workflows/make.yml)
 
 
-GPGX Compare is a repository for testing and benchmarking a possible improvement to the [Genesis Plus GX (gpgx)](https://github.com/ekeeke/Genesis-Plus-GX) core. The main aim is to improve the performance of headless re-recording for TASing and botting (See: [JaffarPlus](https://github.com/SergioMartin86/jaffarPlus)) purposes. It will be also be used as testbed for proposing and update to the GPGX core in [BizHawk](https://github.com/TASEmulators/BizHawk).
+QuickerGPGX is an attempt at improving the performance and reduce the save state memory footprint of the [Genesis Plus GX (gpgx)](https://github.com/ekeeke/Genesis-Plus-GX) emulator. The main aim is to improve the performance of headless re-recording for TASing and botting (See: [JaffarPlus](https://github.com/SergioMartin86/jaffarPlus)) purposes. It will be also be used as testbed for proposing and update to the GPGX core in [BizHawk](https://github.com/TASEmulators/BizHawk).
 
 Improvements
 -------------
