@@ -46,6 +46,7 @@ class EmuInstanceBase
     if (type == "Sega Game Gear")  { _controller.setSystemType(Controller::system_t::gamegear);  isTypeRecognized = true; }
     if (type == "Sega Master System") { _controller.setSystemType(Controller::system_t::sms); isTypeRecognized = true; }
     if (type == "Sega CD") { _controller.setSystemType(Controller::system_t::segacd); isTypeRecognized = true; }
+    if (type == "Sega SG-1000") { _controller.setSystemType(Controller::system_t::sg1000); isTypeRecognized = true; }
 
     if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
   }

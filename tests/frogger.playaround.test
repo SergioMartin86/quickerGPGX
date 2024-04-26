@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Frogger (Prototype) [!].gg",
+  "Expected ROM SHA1": "B917AC6FBD3E5D18C07246F1309D81943EE1DD47",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM" ],
+  "System Type": "Sega Game Gear",
+  "Controller 1 Type": "GameGear2B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

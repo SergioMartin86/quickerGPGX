@@ -12,7 +12,7 @@ class Controller
 {
 public:
 
-  enum system_t { genesis, gamegear, sms, segacd };
+  enum system_t { genesis, gamegear, sms, segacd, sg1000 };
   enum controller_t { none, gamepad2b, gamegear2b, gamepad3b, gamepad6b,  };
 
   typedef uint16_t port_t;
@@ -326,61 +326,20 @@ public:
     // Currently read character
     char c;
 
-    // If its game gear, there is only the reset button
-    if (type == system_t::gamegear)
-    { 
-      c = ss.get();
-      if (c != '.' && c != 'r') isValid = false;
-      if (c == 'r') input.reset = true;
-      if (c == '.') input.reset = false;
+    c = ss.get();
+    if (c != '.' && c != 'P') isValid = false;
+    if (c == 'P') input.power = true;
+    if (c == '.') input.power = false;
 
-      return true;
-   }
-
-    // If its master system, we parse reset and pause buttons
-    if (type == system_t::sms)
-    {
-      c = ss.get();
-      if (c != '.' && c != 'r') isValid = false;
-      if (c == 'r') input.reset = true;
-      if (c == '.') input.reset = false;
-
-      c = ss.get();
-      if (c != '.' && c != 'p') isValid = false;
-      if (c == 'p') input.pause = true;
-      if (c == '.') input.pause = false;
-
-      return true;
-    }
-
-    // If its genesis, parse power and reset buttons
-    if (type == system_t::genesis)
-    {
-      c = ss.get();
-      if (c != '.' && c != 'P') isValid = false;
-      if (c == 'P') input.power = true;
-      if (c == '.') input.power = false;
-
-      c = ss.get();
-      if (c != '.' && c != 'r') isValid = false;
-      if (c == 'r') input.reset = true;
-      if (c == '.') input.reset = false;
-    }
+    c = ss.get();
+    if (c != '.' && c != 'r') isValid = false;
+    if (c == 'r') input.reset = true;
+    if (c == '.') input.reset = false;
 
     // If its segacd, parse power, reset, and disc selection buttons
     if (type == system_t::segacd)
     {
       c = ss.get();
-      if (c != '.' && c != 'P') isValid = false;
-      if (c == 'P') input.power = true;
-      if (c == '.') input.power = false;
-
-      c = ss.get();
-      if (c != '.' && c != 'r') isValid = false;
-      if (c == 'r') input.reset = true;
-      if (c == '.') input.reset = false;
-
-            c = ss.get();
       if (c != '.' && c != '<') isValid = false;
       if (c == '<') input.previousDisc = true;
       if (c == '.') input.previousDisc = false;

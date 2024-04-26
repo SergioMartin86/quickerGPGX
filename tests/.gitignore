@@ -1,4 +1,6 @@
 *.nes
+*.sg
+*.gg
 *.32x
 *.md
 *.iso
