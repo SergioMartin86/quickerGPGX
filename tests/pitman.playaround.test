@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Pitman.sg",
+  "Expected ROM SHA1": "22B6C05F186BC87BFBEB734E8EF107D314F6825D",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM" ],
+  "System Type": "Sega SG-1000",
+  "Controller 1 Type": "GameGear2B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}
