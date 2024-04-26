@@ -15,6 +15,8 @@ protectedTestSet = [
   'throne.playaround',
   'sonic.playaround',
   'gargoyles.playaround',
+  'monacoGP.playaround',
+  'frogger.playaround',
 ]
 
 # Tests for open source free roms (for public cloud testing)
@@ -22,6 +24,7 @@ openSourceTestSet = [
   'dinoRunner.playaround',
   'drunkasilike.playaround',
   'maiNurse.playaround',
+  'pitman.playaround'
 ]
 
 # Creating test set based on whether copyrighted roms are to be used

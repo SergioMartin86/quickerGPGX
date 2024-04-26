@@ -2,7 +2,7 @@
   "Rom File": "roms/Monaco GP (Japan).sg",
   "Expected ROM SHA1": "BEA768B27C09BEC805F0C70545D2F1435E3A3DDF",
   "Initial State File": "",
-  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "Disable State Blocks": [ "SATM" ],
   "System Type": "Sega SG-1000",
   "Controller 1 Type": "Gamepad2B",
   "Controller 2 Type": "None",
