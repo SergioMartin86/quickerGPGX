@@ -9,7 +9,8 @@
 
 struct stepData_t
 {
-  std::string input;
+  jaffar::input_t inputData;
+  std::string inputString;
   uint8_t *stateData;
   jaffarCommon::hash::hash_t hash;
 };
@@ -28,12 +29,16 @@ class PlaybackInstance
     // Allocating temporary state data 
     uint8_t* stateData = (uint8_t*)malloc(_fullStateSize);
 
+    // Getting input decoder
+    auto inputParser = _emu->getInputParser();
+
     // Building sequence information
     for (size_t i = 0; i < sequence.size(); i++)
     {
       // Adding new step
       stepData_t step;
-      step.input = sequence[i];
+      step.inputString = sequence[i];
+      step.inputData = inputParser->parseInputString(step.inputString);
 
       // Serializing state
       jaffarCommon::serializer::Contiguous s(stateData, _fullStateSize);
@@ -50,21 +55,22 @@ class PlaybackInstance
       // We advance depending on cycle type
       if (cycleType == "Simple")
       {
-        _emu->advanceState(step.input);
+        _emu->advanceState(step.inputData );
       }
 
       if (cycleType == "Rerecord")
       {
-        _emu->advanceState(step.input);
+        _emu->advanceState(step.inputData );
         jaffarCommon::deserializer::Contiguous d(stateData, _fullStateSize);
         _emu->deserializeState(d);
-        _emu->advanceState(step.input);
+        _emu->advanceState(step.inputData );
       }
     }
 
     // Adding last step with no input
     stepData_t step;
-    step.input = "<End Of Sequence>";
+    step.inputString = "<End Of Sequence>";
+    step.inputData = _stepSequence.rbegin()->inputData;
     step.stateData = (uint8_t *)malloc(_fullStateSize);
     jaffarCommon::serializer::Contiguous s(step.stateData, _fullStateSize);
 
@@ -98,7 +104,7 @@ class PlaybackInstance
     return _stepSequence.size();
   }
 
-  const std::string getInput(const size_t stepId) const
+  const std::string getInputString(const size_t stepId) const
   {
     // Checking the required step id does not exceed contents of the sequence
     if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
@@ -107,7 +113,19 @@ class PlaybackInstance
     const auto &step = _stepSequence[stepId];
 
     // Returning step input
-    return step.input;
+    return step.inputString;
+  }
+
+  const jaffar::input_t getInputData(const size_t stepId) const
+  {
+    // Checking the required step id does not exceed contents of the sequence
+    if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
+
+    // Getting step information
+    const auto &step = _stepSequence[stepId];
+
+    // Returning step input
+    return step.inputData;
   }
 
   const uint8_t *getStateData(const size_t stepId) const
@@ -132,18 +150,6 @@ class PlaybackInstance
 
     // Returning step input
     return step.hash;
-  }
-
-  const std::string getStateInput(const size_t stepId) const
-  {
-    // Checking the required step id does not exceed contents of the sequence
-    if (stepId > _stepSequence.size()) JAFFAR_THROW_RUNTIME("[Error] Attempting to render a step larger than the step sequence");
-
-    // Getting step information
-    const auto &step = _stepSequence[stepId];
-
-    // Returning step input
-    return step.input;
   }
 
   private:

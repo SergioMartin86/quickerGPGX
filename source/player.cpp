@@ -108,20 +108,13 @@ int main(int argc, char *argv[])
   jaffarCommon::logger::refreshTerminal();
 
   // Creating emulator instance  
-  auto e = gpgx::EmuInstance();
+  auto e = gpgx::EmuInstance(configJs);
 
   // Initializing emulator instance
   e.initialize();
 
   // Initializing video output
   if (disableRender == false) e.initializeVideoOutput();
-
-  // Setting system type
-  e.setSystemType(systemType);
-
-  // Setting controller types
-  e.setController1Type(controller1Type);
-  e.setController2Type(controller2Type);
   
   // Loading ROM File
   std::string romFileData;
@@ -169,7 +162,7 @@ int main(int argc, char *argv[])
     if (disableRender == false) p.renderFrame(currentStep);
 
     // Getting input
-    const auto &input = p.getStateInput(currentStep);
+    const auto &inputString = p.getInputString(currentStep);
 
     // Getting state hash
     const auto hash = p.getStateHash(currentStep);
@@ -184,7 +177,7 @@ int main(int argc, char *argv[])
 
       jaffarCommon::logger::log("[] ----------------------------------------------------------------\n");
       jaffarCommon::logger::log("[] Current Step #: %lu / %lu\n", currentStep + 1, sequenceLength);
-      jaffarCommon::logger::log("[] Input:          %s\n", input.c_str());
+      jaffarCommon::logger::log("[] Input:          %s\n", inputString.c_str());
       jaffarCommon::logger::log("[] State Hash:     0x%lX%lX\n", hash.first, hash.second);
 
       // Only print commands if not in reproduce mode
