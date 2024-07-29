@@ -60,6 +60,7 @@ newGPGXSrc =  [
 
 newGPGXIncludeDirs = [
   '.',
+  '..',
   'core'
 ]
 
