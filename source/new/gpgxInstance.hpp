@@ -36,7 +36,7 @@ class EmuInstance : public EmuInstanceBase
  uint8_t* _baseMem;
  uint8_t* _apuMem;
 
- EmuInstance() : EmuInstanceBase()
+ EmuInstance(const nlohmann::json &config) : EmuInstanceBase(config)
  {
   _dummyBuffer = (uint8_t*) malloc(DUMMY_SIZE);
  }
@@ -128,7 +128,7 @@ class EmuInstance : public EmuInstanceBase
   std::string getCoreName() const override { return "GPGX Base"; }
 
 
-  virtual void advanceStateImpl(const Controller::port_t controller1, const Controller::port_t controller2)
+  virtual void advanceStateImpl(const jaffar::port_t controller1, const jaffar::port_t controller2)
   {
      ::advanceFrame(controller1, controller2);
   }

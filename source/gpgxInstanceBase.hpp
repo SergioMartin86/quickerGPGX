@@ -7,8 +7,7 @@
 #include <jaffarCommon/deserializers/base.hpp>
 #include <jaffarCommon/serializers/contiguous.hpp>
 #include <jaffarCommon/deserializers/contiguous.hpp>
-
-#include "controller.hpp"
+#include "inputParser.hpp"
 
 namespace gpgx
 {
@@ -17,64 +16,19 @@ class EmuInstanceBase
 {
   public:
 
-  EmuInstanceBase() = default;
+  EmuInstanceBase(const nlohmann::json &config)
+  {
+    _inputParser = std::make_unique<jaffar::InputParser>(config);
+  }
+
   virtual ~EmuInstanceBase() = default;
 
-  inline void advanceState(const std::string &move)
+  virtual void advanceState(const jaffar::input_t &input)
   {
-    bool isInputValid = _controller.parseInputString(move);
-    if (isInputValid == false) JAFFAR_THROW_LOGIC("Move provided cannot be parsed: '%s'\n", move.c_str());
+    if (input.power) JAFFAR_THROW_RUNTIME("Power button pressed, but not supported");
+    if (input.reset == true) doSoftReset();
 
-    // Parsing power
-    if (_controller.getPowerButtonState() == true) JAFFAR_THROW_RUNTIME("Power button pressed, but not supported: '%s'\n", move.c_str());
-
-    // Parsing reset
-    if (_controller.getResetButtonState() == true) doSoftReset();
-
-    // Parsing Controllers
-    const auto controller1 = _controller.getController1Code();
-    const auto controller2 = _controller.getController2Code();
-
-    advanceStateImpl(controller1, controller2);
-  }
-
-  inline void setSystemType(const std::string& type)
-  {
-    bool isTypeRecognized = false;
-
-    if (type == "Sega Genesis") { _controller.setSystemType(Controller::system_t::genesis); isTypeRecognized = true; }
-    if (type == "Sega Game Gear")  { _controller.setSystemType(Controller::system_t::gamegear);  isTypeRecognized = true; }
-    if (type == "Sega Master System") { _controller.setSystemType(Controller::system_t::sms); isTypeRecognized = true; }
-    if (type == "Sega CD") { _controller.setSystemType(Controller::system_t::segacd); isTypeRecognized = true; }
-    if (type == "Sega SG-1000") { _controller.setSystemType(Controller::system_t::sg1000); isTypeRecognized = true; }
-
-    if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
-  }
-
-  inline void setController1Type(const std::string& type)
-  {
-    bool isTypeRecognized = false;
-
-    if (type == "None") { _controller.setController1Type(Controller::controller_t::none); isTypeRecognized = true; }
-    if (type == "GameGear2B") { _controller.setController1Type(Controller::controller_t::gamegear2b);  isTypeRecognized = true; }
-    if (type == "Gamepad2B")  { _controller.setController1Type(Controller::controller_t::gamepad2b); isTypeRecognized = true; }
-    if (type == "Gamepad3B")  { _controller.setController1Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
-    if (type == "Gamepad6B")  { _controller.setController1Type(Controller::controller_t::gamepad6b); isTypeRecognized = true; }
-
-    if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
-  }
-
-  inline void setController2Type(const std::string& type)
-  {
-    bool isTypeRecognized = false;
-
-    if (type == "None") { _controller.setController2Type(Controller::controller_t::none); isTypeRecognized = true; }
-    if (type == "GameGear2B") { _controller.setController2Type(Controller::controller_t::gamegear2b);  isTypeRecognized = true; }
-    if (type == "Gamepad2B")  { _controller.setController2Type(Controller::controller_t::gamepad2b); isTypeRecognized = true; }
-    if (type == "Gamepad3B")  { _controller.setController2Type(Controller::controller_t::gamepad3b); isTypeRecognized = true; }
-    if (type == "Gamepad6B")  { _controller.setController2Type(Controller::controller_t::gamepad6b); isTypeRecognized = true; }
-    
-    if (isTypeRecognized == false) JAFFAR_THROW_LOGIC("Input type not recognized: '%s'\n", type.c_str());
+    advanceStateImpl(input.port1, input.port2);
   }
 
   inline jaffarCommon::hash::hash_t getStateHash() const
@@ -130,7 +84,9 @@ class EmuInstanceBase
   {
     return _differentialStateSize;
   }
-
+  
+  inline jaffar::InputParser *getInputParser() const { return _inputParser.get(); }
+  
   // Virtual functions
 
   virtual void updateRenderer() = 0;
@@ -145,7 +101,7 @@ class EmuInstanceBase
 
   virtual uint8_t* getWorkRamPointer() const = 0;
   virtual bool loadROMImpl(const std::string &romData) = 0;
-  virtual void advanceStateImpl(const Controller::port_t controller1, const Controller::port_t controller2) = 0;
+  virtual void advanceStateImpl(const jaffar::port_t controller1, const jaffar::port_t controller2) = 0;
 
   virtual void enableStateBlockImpl(const std::string& block) {};
   virtual void disableStateBlockImpl(const std::string& block) {};
@@ -157,11 +113,11 @@ class EmuInstanceBase
 
   private:
 
-  // Controller class for input parsing
-  Controller _controller;
-
   // Differential state size
   size_t _differentialStateSize;
+
+  // Input parser instance
+  std::unique_ptr<jaffar::InputParser> _inputParser;
 };
 
 } // namespace gpgx

@@ -113,17 +113,10 @@ int main(int argc, char *argv[])
   const auto differentialCompressionUseZlib = differentialCompressionJs["Use Zlib"].get<bool>();
 
   // Creating emulator instance
-  auto e = gpgx::EmuInstance();
+  auto e = gpgx::EmuInstance(configJs);
 
   // Initializing emulator instance
   e.initialize();
-
-  // Setting controller types
-  e.setController1Type(controller1Type);
-  e.setController2Type(controller2Type);
-
-  // Setting system type
-  e.setSystemType(systemType);
   
   // Loading ROM File
   std::string romFileData;
@@ -167,6 +160,13 @@ int main(int argc, char *argv[])
 
   // Getting sequence lenght
   const auto sequenceLength = sequence.size();
+
+  // Getting input parser from the emulator
+  const auto inputParser = e.getInputParser();
+
+  // Getting decoded emulator input for each entry in the sequence
+  std::vector<jaffar::input_t> decodedSequence;
+  for (const auto &inputString : sequence) decodedSequence.push_back(inputParser->parseInputString(inputString));
 
   // Getting emulation core name
   std::string emulationCoreName = e.getCoreName();
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 
   // Actually running the sequence
   auto t0 = std::chrono::high_resolution_clock::now();
-  for (const std::string &input : sequence)
+  for (const auto &input : decodedSequence)
   {
     if (doPreAdvance == true) e.advanceState(input);
     
