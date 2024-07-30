@@ -1,0 +1,15 @@
+{
+  "Rom File": "roms/Micro Machines (USA) (Rev 1).md",
+  "Expected ROM SHA1": "0D4D023A1F9DC8B794BD60BF6E70465B712FFDED",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Genesis",
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

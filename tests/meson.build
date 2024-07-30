@@ -17,6 +17,7 @@ protectedTestSet = [
   'gargoyles.playaround',
   'monacoGP.playaround',
   'frogger.playaround',
+  'microMachines.playaround',
 ]
 
 # Tests for open source free roms (for public cloud testing)
