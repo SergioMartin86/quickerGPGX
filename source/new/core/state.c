@@ -9,6 +9,9 @@ __thread uint8_t SATMBlockEnabled = 1;
 void enableSATMBlock() { SATMBlockEnabled = 1; };
 void disableSATMBlock() { SATMBlockEnabled = 0; };
 
+__thread size_t _workRAMSerializationSize = 0x10000;
+void setWorkRamSerializationSize(const size_t size) { _workRAMSerializationSize = size; }
+
 // cart_hw/svp/svp.hc
 
 // Special case, as svp is inside the cart.rom allocation
@@ -1549,7 +1552,7 @@ int state_load(unsigned char *state)
   /* GENESIS */
   if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
   {
-    load_param(work_ram, sizeof(work_ram));
+    load_param(work_ram, _workRAMSerializationSize);
     load_param(zram, sizeof(zram));
     load_param(&zstate, sizeof(zstate));
     load_param(&zbank, sizeof(zbank));
@@ -1685,7 +1688,7 @@ int state_save(unsigned char *state)
   /* GENESIS */
   if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
   {
-    save_param(work_ram, sizeof(work_ram));
+    save_param(work_ram, _workRAMSerializationSize);
     save_param(zram, sizeof(zram));
     save_param(&zstate, sizeof(zstate));
     save_param(&zbank, sizeof(zbank));

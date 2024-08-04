@@ -24,6 +24,7 @@ extern "C"
  void disableVRAMBlock();
  void enableSATMBlock();
  void disableSATMBlock();
+ void setWorkRamSerializationSize(const size_t size);
 }
 
 namespace gpgx
@@ -84,6 +85,9 @@ class EmuInstance : public EmuInstanceBase
 
   void deserializeState(jaffarCommon::deserializer::Base& d) override
   {
+    // d.pop(_dummyBuffer, _stateSize);
+    // ::state_load(_dummyBuffer);
+
     int size = ::state_load((unsigned char*)d.getInputDataBuffer());
     d.popContiguous(nullptr, size);
   }
@@ -99,7 +103,12 @@ class EmuInstance : public EmuInstanceBase
     ::renderFrame();
   }
 
-  inline size_t getDifferentialStateSizeImpl() const override { return getStateSizeImpl(); }
+  inline size_t getDifferentialStateSizeImpl() const override { return 0; }
+
+  void setWorkRamSerializationSizeImpl(const size_t size) override
+  {
+    ::setWorkRamSerializationSize(size);
+  }
 
   void enableStateBlockImpl(const std::string& block) override
   {

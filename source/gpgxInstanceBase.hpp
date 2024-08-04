@@ -75,6 +75,13 @@ class EmuInstanceBase
     _differentialStateSize = getDifferentialStateSizeImpl();
   }
 
+  virtual void setWorkRamSerializationSize(const size_t size)
+  {
+    setWorkRamSerializationSizeImpl(size);
+    _stateSize = getStateSizeImpl();
+    _differentialStateSize = getDifferentialStateSizeImpl();
+  }
+
   inline size_t getStateSize() const 
   {
     return _stateSize;
@@ -102,7 +109,7 @@ class EmuInstanceBase
   virtual uint8_t* getWorkRamPointer() const = 0;
   virtual bool loadROMImpl(const std::string &romData) = 0;
   virtual void advanceStateImpl(const jaffar::port_t controller1, const jaffar::port_t controller2) = 0;
-
+  virtual void setWorkRamSerializationSizeImpl(const size_t size) {};
   virtual void enableStateBlockImpl(const std::string& block) {};
   virtual void disableStateBlockImpl(const std::string& block) {};
 

@@ -9,7 +9,7 @@
   "Differential Compression":
   {
     "Enabled": false,
-    "Max Differences": 2200,
+    "Max Differences": 30000,
     "Use Zlib": true
   }
 }
