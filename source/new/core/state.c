@@ -9,6 +9,8 @@ __thread uint8_t SATMBlockEnabled = 1;
 void enableSATMBlock() { SATMBlockEnabled = 1; };
 void disableSATMBlock() { SATMBlockEnabled = 0; };
 
+uint8_t* getVideoRamPtr() { return vram; }
+
 __thread size_t _workRAMSerializationSize = 0x10000;
 void setWorkRamSerializationSize(const size_t size) { _workRAMSerializationSize = size; }
 
@@ -689,7 +691,11 @@ int vdp_context_save(uint8 *state)
   int bufferptr = 0;
 
   if (SATMBlockEnabled == 1) { save_param(sat, sizeof(sat)); }
-  if (VRAMBlockEnabled == 1) { save_param(vram, sizeof(vram)); }
+  if (VRAMBlockEnabled == 1)
+  {
+    if (system_hw == 65) { save_param(vram, 0x4000); } 
+    else { save_param(vram, sizeof(vram)); }
+  }
   save_param(cram, sizeof(cram));
   save_param(vsram, sizeof(vsram));
   save_param(reg, sizeof(reg));
@@ -717,7 +723,12 @@ int vdp_context_load(uint8 *state)
   uint8 temp_reg[0x20];
 
   if (SATMBlockEnabled == 1) { load_param(sat, sizeof(sat)); }
-  if (VRAMBlockEnabled == 1) { load_param(vram, sizeof(vram)); }
+  if (VRAMBlockEnabled == 1) 
+  {
+    if (system_hw == 65) { load_param(vram, 0x4000); }
+    else { load_param(vram, sizeof(vram)); }
+  }
+  
   load_param(cram, sizeof(cram));
   load_param(vsram, sizeof(vsram));
   load_param(temp_reg, sizeof(temp_reg));

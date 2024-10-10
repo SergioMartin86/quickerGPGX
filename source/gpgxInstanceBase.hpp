@@ -106,6 +106,7 @@ class EmuInstanceBase
 
   protected:
 
+  virtual uint8_t* getVideoRamPointer() const { return nullptr; };
   virtual uint8_t* getWorkRamPointer() const = 0;
   virtual bool loadROMImpl(const std::string &romData) = 0;
   virtual void advanceStateImpl(const jaffar::port_t controller1, const jaffar::port_t controller2) = 0;

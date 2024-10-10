@@ -83,6 +83,24 @@ void osd_input_update(void)
   sdl_input_update();
 }
 
+void setBiosFile(const char* biosFile)
+{
+  config.bios = 1;
+
+  strcpy(GG_ROM, biosFile);
+  strcpy(AR_ROM, biosFile);
+  strcpy(SK_ROM, biosFile);
+  strcpy(SK_UPMEM, biosFile);
+  strcpy(GG_BIOS, biosFile);
+  strcpy(CD_BIOS_EU, biosFile);
+  strcpy(CD_BIOS_US, biosFile);
+  strcpy(CD_BIOS_JP, biosFile);
+  strcpy(MD_BIOS, biosFile);
+  strcpy(MS_BIOS_US, biosFile);
+  strcpy(MS_BIOS_EU, biosFile);
+  strcpy(MS_BIOS_JP, biosFile);
+}
+
 void set_config_defaults(void)
 {
   int i;
@@ -102,7 +120,7 @@ void set_config_defaults(void)
   config.hg             = 100;
   config.lp_range       = 0x9999; /* 0.6 in 0.16 fixed point */
   config.ym2612         = 0;
-  config.ym2413         = 2; /* = AUTO (0 = always OFF, 1 = always ON) */
+  config.ym2413         = 1; /* = AUTO (0 = always OFF, 1 = always ON) */
   config.ym3438         = 0;
   config.opll           = 0;
   config.mono           = 0;

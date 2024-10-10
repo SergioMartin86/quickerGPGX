@@ -69,7 +69,7 @@ newGPGXCompileArgs = [
   '-DUSE_32BPP_RENDERING',
   '-DMAXROMSIZE=33554432',
   '-DHAVE_YM3438_CORE',
-  '-DHAVE_OPLL_CORE',
+  '-DHAVE_OPLL_CORE'
 ]
 
 # newGPGX Core Configuration

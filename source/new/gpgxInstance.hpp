@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <jaffarCommon/exceptions.hpp>
+#include <jaffarCommon/json.hpp>
 #include <jaffarCommon/serializers/contiguous.hpp>
 #include <jaffarCommon/deserializers/contiguous.hpp>
 
@@ -25,6 +26,8 @@ extern "C"
  void enableSATMBlock();
  void disableSATMBlock();
  void setWorkRamSerializationSize(const size_t size);
+ void setBiosFile(const char* biosFile);
+ uint8_t* getVideoRamPtr();
 }
 
 namespace gpgx
@@ -40,6 +43,7 @@ class EmuInstance : public EmuInstanceBase
  EmuInstance(const nlohmann::json &config) : EmuInstanceBase(config)
  {
   _dummyBuffer = (uint8_t*) malloc(DUMMY_SIZE);
+  _biosFilePath = jaffarCommon::json::getString(config, "Bios File Path");
  }
 
  ~EmuInstance()
@@ -50,6 +54,7 @@ class EmuInstance : public EmuInstanceBase
   virtual void initialize() override
   {
     ::initialize();
+    if (_biosFilePath != "") setBiosFile(_biosFilePath.c_str());
   }
 
   virtual bool loadROMImpl(const std::string &romFilePath) override
@@ -142,6 +147,11 @@ class EmuInstance : public EmuInstanceBase
      ::advanceFrame(controller1, controller2);
   }
 
+  inline uint8_t* getVideoRamPointer() const override
+  {
+    return getVideoRamPtr();
+  }
+
   inline uint8_t* getWorkRamPointer() const override
   {
     return getWorkRamPtr();
@@ -155,6 +165,7 @@ class EmuInstance : public EmuInstanceBase
   private:
 
   uint8_t* _dummyBuffer;
+  std::string _biosFilePath;
 
 };
 

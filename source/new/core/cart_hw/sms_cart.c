@@ -407,13 +407,15 @@ static const rominfo_t game_list[] =
 };
 
 /* Current slot */
-static struct
+struct slot_t
 {
   uint8_t *rom;
   uint8_t *fcr;
   uint8_t mapper;
   uint16_t pages;
-} slot;
+};
+
+__thread  struct slot_t slot;
 
 /* Function prototypes */
 static void mapper_reset(void);
@@ -1212,7 +1214,7 @@ static void mapper_8k_w(int offset, unsigned char data)
 #endif
 }
     
-static void mapper_16k_w(int offset, unsigned char data)
+void mapper_16k_w(int offset, unsigned char data)
 {
   int i;
 

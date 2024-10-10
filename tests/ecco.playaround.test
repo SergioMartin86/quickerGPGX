@@ -4,6 +4,7 @@
   "Initial State File": "",
   "Disable State Blocks": [ ],
   "System Type": "Sega CD",
+  "Bios File Path": "",
   "Controller 1 Type": "Gamepad3B",
   "Controller 2 Type": "None",
   "Differential Compression":

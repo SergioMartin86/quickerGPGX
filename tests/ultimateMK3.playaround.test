@@ -4,6 +4,7 @@
   "Initial State File": "",
   "Disable State Blocks": [ "SATM", "VRAM" ],
   "System Type": "Sega Genesis",
+  "Bios File Path": "",
   "Controller 1 Type": "Gamepad6B",
   "Controller 2 Type": "Gamepad6B",
   "Differential Compression":

@@ -4,6 +4,7 @@
   "Initial State File": "",
   "Disable State Blocks": [ "SATM" ],
   "System Type": "Sega SG-1000",
+  "Bios File Path": "",
   "Controller 1 Type": "GameGear2B",
   "Controller 2 Type": "None",
   "Differential Compression":
