@@ -1,0 +1,16 @@
+{
+  "Rom File": "roms/avuado-1st-version.bin",
+  "Expected ROM SHA1": "2EAA8193AEE0296498B1C41326856DFDD5B5223A",
+  "Initial State File": "",
+  "Disable State Blocks": [ "SATM", "VRAM" ],
+  "System Type": "Sega Genesis",
+  "Bios File Path": "",
+  "Controller 1 Type": "Gamepad3B",
+  "Controller 2 Type": "None",
+  "Differential Compression":
+  {
+    "Enabled": false,
+    "Max Differences": 2200,
+    "Use Zlib": true
+  }
+}

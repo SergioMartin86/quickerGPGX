@@ -22,6 +22,7 @@ protectedTestSet = [
 
 # Tests for open source free roms (for public cloud testing)
 openSourceTestSet = [
+  'avuado.playaround',
   'dinoRunner.playaround',
   'drunkasilike.playaround',
   'maiNurse.playaround',
