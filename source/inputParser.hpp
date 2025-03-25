@@ -373,6 +373,15 @@ public:
     if (c == 'r') input.reset = true;
     if (c == '.') input.reset = false;
 
+    // If its sms enables pause
+    if (type == system_t::sms)
+    {
+      c = ss.get();
+      if (c != '.' && c != 'p') reportBadInputString(inputString);
+      if (c == 'p') input.pause = true;
+      if (c == '.') input.pause = false;
+    }
+
     // If its segacd, parse power, reset, and disc selection buttons
     if (type == system_t::segacd)
     {
