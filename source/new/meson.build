@@ -69,7 +69,14 @@ newGPGXCompileArgs = [
   '-DUSE_32BPP_RENDERING',
   '-DMAXROMSIZE=33554432',
   '-DHAVE_YM3438_CORE',
-  '-DHAVE_OPLL_CORE'
+  '-DHAVE_OPLL_CORE',
+  # Allocate the ~42MB cartridge/CD hardware state (external_t ext, incl. the 32MB ROM
+  # buffer) on the heap instead of in thread-local storage. As TLS it inflated the
+  # binary's static TLS to ~45MB, which glibc carves out of each thread's stack -- leaving
+  # OpenMP workers with ~12KB usable stack and crashing in libtbbmalloc's lazy dlopen
+  # during StateDb::initialize. The dynamic-alloc path (ext = calloc(...) in load_rom) is
+  # already implemented behind this flag.
+  '-DUSE_DYNAMIC_ALLOC'
 ]
 
 # newGPGX Core Configuration
