@@ -3401,14 +3401,70 @@ void z80_reset(void)
   WZ=PCD;
 }
 
+/* Recognize the top of a side-effect-free "spin on a RAM value" idle loop -- the idiom sound
+ * drivers use to wait for their V-blank IRQ. Returns the loop's byte length L (so the trailing
+ * conditional JR branches back to pc), or 0 if pc is not such a loop. Recognized bodies, all of
+ * which only read Z80 RAM + set flags (no writes, no I/O, no register changes besides A/F, and
+ * idempotent across iterations while the flag is constant):
+ *   LD A,(nn) ; {OR A | AND A | CP n} ; {JR Z | JR NZ},$        (flag at nn)
+ *   LD A,(HL) ; {OR A | AND A | CP n} ; {JR Z | JR NZ},$        (flag at HL)
+ *   BIT b,(HL)                       ; {JR Z | JR NZ},$        (flag at HL)
+ * The flag address must be in Z80 RAM (< 0x2000) so the skipped reads are side-effect-free. */
+static __INLINE__ int z80_idle_loop_len(uint16_t pc)
+{
+  uint8_t  op = cpu_readop(pc);
+  uint16_t flagaddr;
+  uint16_t jrpc; /* address of the conditional JR opcode */
+
+  if (op == 0x3A) /* LD A,(nn) : 3 bytes */
+  {
+    flagaddr     = cpu_readop_arg((pc + 1) & 0xFFFF) | (cpu_readop_arg((pc + 2) & 0xFFFF) << 8);
+    uint8_t test = cpu_readop((pc + 3) & 0xFFFF);
+    if (test == 0xB7 || test == 0xA7) jrpc = pc + 4;      /* OR A / AND A : 1 byte */
+    else if (test == 0xFE)            jrpc = pc + 5;      /* CP n         : 2 bytes */
+    else return 0;
+  }
+  else if (op == 0x7E) /* LD A,(HL) : 1 byte */
+  {
+    flagaddr     = HL;
+    uint8_t test = cpu_readop((pc + 1) & 0xFFFF);
+    if (test == 0xB7 || test == 0xA7) jrpc = pc + 2;      /* OR A / AND A */
+    else if (test == 0xFE)            jrpc = pc + 3;      /* CP n         */
+    else return 0;
+  }
+  else if (op == 0xCB) /* BIT b,(HL) : CB, 0x46|(b<<3) -> mask 0xC7 == 0x46 */
+  {
+    if ((cpu_readop((pc + 1) & 0xFFFF) & 0xC7) != 0x46) return 0;
+    flagaddr = HL;
+    jrpc     = pc + 2;
+  }
+  else return 0;
+
+  if (flagaddr >= 0x2000) return 0; /* flag must be in Z80 RAM (side-effect-free to re-read) */
+
+  uint8_t jop = cpu_readop(jrpc & 0xFFFF);
+  if (jop != 0x28 && jop != 0x20) return 0; /* JR Z / JR NZ */
+  int loopLen = (jrpc + 2) - pc;
+  if ((uint8_t)cpu_readop((jrpc + 1) & 0xFFFF) != (uint8_t)(-loopLen)) return 0; /* branches back to pc */
+  return loopLen;
+}
+
 /****************************************************************************
- * Run until given cycle count 
+ * Run until given cycle count
  ****************************************************************************/
 void z80_run(unsigned int cycles)
 {
-  /* Idle-loop skip is on by default (set GPGX_Z80_NOIDLE to disable). See below. */
+  /* Idle-loop skip is on by default (set GPGX_Z80_NOIDLE to disable). */
   static int idle_skip = -1;
   if (idle_skip == -1) idle_skip = getenv("GPGX_Z80_NOIDLE") ? 0 : 1;
+
+  /* Arm-then-confirm idle skip: when we recognize a read-only spin loop (above) we let the
+   * interpreter run exactly ONE real iteration, then -- on returning to the loop top -- fast
+   * forward to the end of the slice. Running one real iteration leaves A/F/PC exactly as the spin
+   * would (no per-opcode flag math to replicate), and since the flag cannot change before 'cycles'
+   * (the 68k is paused during this Z80 slice and the only thing that could, an IRQ, is checked each
+   * instruction below), the skipped iterations are identical no-ops. Bit-exact. */
+  uint16_t armed_pc = 0xFFFF, armed_end = 0;
 
   while( Z80.cycles < cycles )
   {
@@ -3419,35 +3475,15 @@ void z80_run(unsigned int cycles)
       if (Z80.cycles >= cycles) return;
     }
 
-    /* Idle-loop skip: fast-forward a side-effect-free "spin on a RAM flag" of the form
-     *   LD A,(nn) ; {OR A | AND A} ; {JR Z | JR NZ},<back to the LD>     (nn in Z80 RAM)
-     * which sound drivers use to wait for their V-blank IRQ. The loop body only reads RAM and
-     * sets flags; nothing can change the flag before 'cycles' (the 68k is paused during this Z80
-     * slice, and the IRQ -- the only thing that could -- was already checked above and is not
-     * firing this iteration). So every iteration leaves identical register state and we may jump
-     * straight to the end of the slice. We reproduce that exact end state (A = flag, F from the
-     * OR/AND) so this is bit-exact, not merely "close". */
-    if (idle_skip && cpu_readop(PCD) == 0x3A /* LD A,(nn) */)
+    if (idle_skip)
     {
-      uint16_t a    = PCD & 0xFFFF;
-      uint16_t addr = cpu_readop_arg((a + 1) & 0xFFFF) | (cpu_readop_arg((a + 2) & 0xFFFF) << 8);
-      uint8_t  test = cpu_readop((a + 3) & 0xFFFF); /* OR A (B7) or AND A (A7) */
-      uint8_t  jr   = cpu_readop((a + 4) & 0xFFFF); /* JR Z (28) or JR NZ (20) */
-      if (addr < 0x2000                              /* flag lives in Z80 RAM (pure read)        */
-          && (test == 0xB7 || test == 0xA7)          /* OR A / AND A: A unchanged, F = SZP[A](|H) */
-          && (jr == 0x28 || jr == 0x20)              /* JR Z / JR NZ                              */
-          && cpu_readop((a + 5) & 0xFFFF) == 0xFA)   /* e = -6 -> branches back to the LD         */
+      uint16_t pc = PCD & 0xFFFF;
+      if (pc == armed_pc) { Z80.cycles = cycles; return; } /* back at loop top after 1 iteration */
+      if (pc < armed_pc || pc >= armed_end)                /* not traversing the armed loop body  */
       {
-        uint8_t flag  = z80_readmem(addr);
-        int     spins = (jr == 0x28) ? (flag == 0)   /* JR Z  spins while flag == 0 */
-                                     : (flag != 0);  /* JR NZ spins while flag != 0 */
-        if (spins)
-        {
-          A = flag;
-          F = SZP[flag] | ((test == 0xA7) ? HF : 0);
-          Z80.cycles = cycles;
-          return;
-        }
+        int len = z80_idle_loop_len(pc);
+        if (len) { armed_pc = pc; armed_end = pc + len; }
+        else     { armed_pc = 0xFFFF; armed_end = 0; }
       }
     }
 
