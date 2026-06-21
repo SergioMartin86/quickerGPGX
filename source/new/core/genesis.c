@@ -154,6 +154,12 @@ void gen_init(void)
       z80_writemem  = z80_memory_w;
       z80_readmem   = z80_memory_r;
 
+      /* enable the inline Z80 RAM fast-path ($0000-$3FFF is plain 8K-mirrored zram here) */
+      {
+        extern __thread int z80_fastram;
+        z80_fastram = 1;
+      }
+
       /* initialize Z80 port handlers */
       z80_writeport = z80_unused_port_w;
       z80_readport  = z80_unused_port_r;

@@ -218,6 +218,12 @@ unsigned char (*z80_readmem)(unsigned int address);
 void (*z80_writeport)(unsigned int port, unsigned char data);
 unsigned char (*z80_readport)(unsigned int port);
 
+/* Fast-path for Genesis/Mega-CD Z80 RAM access: when set, $0000-$3FFF is plain 8K-mirrored
+ * Z80 RAM (zram) with no read/write side effects, so it can be served inline without the
+ * z80_readmem/z80_writemem indirect call + region switch. Enabled only by the Genesis Z80
+ * init (genesis.c); left 0 for SMS/GG/SG-1000 whose low addresses are ROM/paged. */
+__thread int z80_fastram = 0;
+
 const uint16_t cc_op[0x100] = {
    4*15,10*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15, 4*15,11*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15,
    8*15,10*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15,12*15,11*15, 7*15, 6*15, 4*15, 4*15, 7*15, 4*15,
@@ -614,12 +620,24 @@ INLINE void BURNODD(int cycles, int opcodes, int cyclesum)
 /***************************************************************
  * Read a byte from given memory location
  ***************************************************************/
-#define RM(addr) z80_readmem(addr)
+extern __thread int z80_fastram;
+extern __thread uint8_t zram[0x2000];
+INLINE unsigned char z80_rm(unsigned int addr)
+{
+  if (z80_fastram && addr < 0x4000) return zram[addr & 0x1FFF]; /* matches z80_memory_r case 0/1 */
+  return z80_readmem(addr);
+}
+#define RM(addr) z80_rm(addr)
 
 /***************************************************************
  * Write a byte to given memory location
  ***************************************************************/
-#define WM(addr,value) z80_writemem(addr,value)
+INLINE void z80_wm(unsigned int addr, unsigned char value)
+{
+  if (z80_fastram && addr < 0x4000) { zram[addr & 0x1FFF] = value; return; } /* matches z80_memory_w case 0/1 */
+  z80_writemem(addr, value);
+}
+#define WM(addr,value) z80_wm(addr,value)
 
 /***************************************************************
  * Read a word from given memory location
