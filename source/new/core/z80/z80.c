@@ -3406,6 +3406,10 @@ void z80_reset(void)
  ****************************************************************************/
 void z80_run(unsigned int cycles)
 {
+  /* Idle-loop skip is on by default (set GPGX_Z80_NOIDLE to disable). See below. */
+  static int idle_skip = -1;
+  if (idle_skip == -1) idle_skip = getenv("GPGX_Z80_NOIDLE") ? 0 : 1;
+
   while( Z80.cycles < cycles )
   {
     /* check for IRQs before each instruction */
@@ -3415,11 +3419,43 @@ void z80_run(unsigned int cycles)
       if (Z80.cycles >= cycles) return;
     }
 
+    /* Idle-loop skip: fast-forward a side-effect-free "spin on a RAM flag" of the form
+     *   LD A,(nn) ; {OR A | AND A} ; {JR Z | JR NZ},<back to the LD>     (nn in Z80 RAM)
+     * which sound drivers use to wait for their V-blank IRQ. The loop body only reads RAM and
+     * sets flags; nothing can change the flag before 'cycles' (the 68k is paused during this Z80
+     * slice, and the IRQ -- the only thing that could -- was already checked above and is not
+     * firing this iteration). So every iteration leaves identical register state and we may jump
+     * straight to the end of the slice. We reproduce that exact end state (A = flag, F from the
+     * OR/AND) so this is bit-exact, not merely "close". */
+    if (idle_skip && cpu_readop(PCD) == 0x3A /* LD A,(nn) */)
+    {
+      uint16_t a    = PCD & 0xFFFF;
+      uint16_t addr = cpu_readop_arg((a + 1) & 0xFFFF) | (cpu_readop_arg((a + 2) & 0xFFFF) << 8);
+      uint8_t  test = cpu_readop((a + 3) & 0xFFFF); /* OR A (B7) or AND A (A7) */
+      uint8_t  jr   = cpu_readop((a + 4) & 0xFFFF); /* JR Z (28) or JR NZ (20) */
+      if (addr < 0x2000                              /* flag lives in Z80 RAM (pure read)        */
+          && (test == 0xB7 || test == 0xA7)          /* OR A / AND A: A unchanged, F = SZP[A](|H) */
+          && (jr == 0x28 || jr == 0x20)              /* JR Z / JR NZ                              */
+          && cpu_readop((a + 5) & 0xFFFF) == 0xFA)   /* e = -6 -> branches back to the LD         */
+      {
+        uint8_t flag  = z80_readmem(addr);
+        int     spins = (jr == 0x28) ? (flag == 0)   /* JR Z  spins while flag == 0 */
+                                     : (flag != 0);  /* JR NZ spins while flag != 0 */
+        if (spins)
+        {
+          A = flag;
+          F = SZP[flag] | ((test == 0xA7) ? HF : 0);
+          Z80.cycles = cycles;
+          return;
+        }
+      }
+    }
+
     Z80.after_ei = FALSE;
     R++;
     EXEC_INLINE(op,ROP());
   }
-} 
+}
 
 /****************************************************************************
  * Get all registers in given buffer
