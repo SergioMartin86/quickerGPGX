@@ -11,6 +11,19 @@
 #define VIDEO_WIDTH  320
 #define VIDEO_HEIGHT 240
 
+/* Sega CD BIOS paths -- defaults match the historical osd.h literals, overridable via
+ * setBiosFile() so the test harness / driver can point at a provided BIOS file. */
+char CD_BIOS_US[256] = "./bios_CD_U.bin";
+char CD_BIOS_EU[256] = "./bios_CD_E.bin";
+char CD_BIOS_JP[256] = "./bios_CD_J.bin";
+
+void setBiosFile(const char* biosFile)
+{
+  strcpy(CD_BIOS_US, biosFile);
+  strcpy(CD_BIOS_EU, biosFile);
+  strcpy(CD_BIOS_JP, biosFile);
+}
+
 int joynum = 0;
 
 int log_error   = 0;

@@ -22,6 +22,7 @@ extern "C"
  void loadROM(const char* filePath);
  void renderFrame();
  void advanceFrame(const uint16_t controller1, const uint16_t controller2);
+ void setBiosFile(const char* biosFile);
  uint8_t* getWorkRamPtr();
 }
 
@@ -34,14 +35,17 @@ class EmuInstance : public EmuInstanceBase
 
  uint8_t* _baseMem;
  uint8_t* _apuMem;
+ std::string _biosFilePath;
 
  EmuInstance(const nlohmann::json &config) : EmuInstanceBase(config)
  {
+  _biosFilePath = jaffarCommon::json::getString(config, "Bios File Path");
  }
 
   virtual void initialize() override
   {
     ::initialize();
+    if (_biosFilePath != "") setBiosFile(_biosFilePath.c_str());
   }
 
   virtual bool loadROMImpl(const std::string &romFilePath) override
