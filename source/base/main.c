@@ -11,6 +11,13 @@
 #define VIDEO_WIDTH  320
 #define VIDEO_HEIGHT 240
 
+/* Sega CD BIOS paths. The core's sdl/osd.h declares these as runtime-settable
+   (extern char[256]); define them here (mirroring the 'new' frontend) with the
+   default filenames so loadrom.c's load_bios() links. */
+char CD_BIOS_US[256] = "./bios_CD_U.bin";
+char CD_BIOS_EU[256] = "./bios_CD_E.bin";
+char CD_BIOS_JP[256] = "./bios_CD_J.bin";
+
 int joynum = 0;
 
 int log_error   = 0;
