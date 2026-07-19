@@ -14,6 +14,13 @@
 
 #include "m68k.h"
 
+#ifdef MM_CPTRACE
+/* Micro Machines checkpoint-table tracer: records data reads in a ring buffer and, on a write to
+   work-RAM 0xA69C (the track-checkpoint counter), dumps the writing PC + recent reads (the table lookup). */
+void mm_cptrace_read(unsigned int address, unsigned int val, int size);
+void mm_cptrace_write(unsigned int address, unsigned int value, unsigned int pc, int size);
+#endif
+
 
 /* ======================================================================== */
 /* ============================ GENERAL DEFINES =========================== */
@@ -861,6 +868,9 @@ INLINE uint32_t m68ki_read_8(uint32_t address)
   if (cpu_hook)
     cpu_hook(HOOK_M68K_R, 1, address, val);
 #endif
+#ifdef MM_CPTRACE
+  mm_cptrace_read(address, val, 1);
+#endif
 
   return val;
 }
@@ -880,6 +890,9 @@ INLINE uint32_t m68ki_read_16(uint32_t address)
 #ifdef HOOK_CPU
   if (cpu_hook)
     cpu_hook(HOOK_M68K_R, 2, address, val);
+#endif
+#ifdef MM_CPTRACE
+  mm_cptrace_read(address, val, 2);
 #endif
 
   return val;
@@ -919,6 +932,9 @@ INLINE void m68ki_write_8(uint32_t address, uint32_t value)
   temp = &m68ki_cpu.memory_map[((address)>>16)&0xff];
   if (temp->write8) (*temp->write8)(ADDRESS_68K(address),value);
   else WRITE_BYTE(temp->base, (address) & 0xffff, value);
+#ifdef MM_CPTRACE
+  mm_cptrace_write(address, value, REG_PC, 1);
+#endif
 }
 
 INLINE void m68ki_write_16(uint32_t address, uint32_t value)
@@ -936,6 +952,9 @@ INLINE void m68ki_write_16(uint32_t address, uint32_t value)
   temp = &m68ki_cpu.memory_map[((address)>>16)&0xff];
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address),value);
   else *(uint16_t *)(temp->base + ((address) & 0xffff)) = value;
+#ifdef MM_CPTRACE
+  mm_cptrace_write(address, value, REG_PC, 2);
+#endif
 }
 
 INLINE void m68ki_write_32(uint32_t address, uint32_t value)
@@ -957,6 +976,9 @@ INLINE void m68ki_write_32(uint32_t address, uint32_t value)
   temp = &m68ki_cpu.memory_map[((address + 2)>>16)&0xff];
   if (temp->write16) (*temp->write16)(ADDRESS_68K(address+2),value&0xffff);
   else *(uint16_t *)(temp->base + ((address + 2) & 0xffff)) = value;
+#ifdef MM_CPTRACE
+  mm_cptrace_write(address, value, REG_PC, 4);
+#endif
 }
 
 

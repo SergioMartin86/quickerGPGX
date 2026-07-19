@@ -19,6 +19,58 @@ extern int vdp_68k_irq_ack(int int_level);
 
 #include "m68kconf.h"
 #include "m68kcpu.h"
+
+#ifdef MM_CPTRACE
+/* ---- Micro Machines checkpoint-table tracer (see m68kcpu.h) ---- */
+#include <stdio.h>
+#include <stdlib.h>
+#define MM_RING 1024
+static unsigned int mm_ra[MM_RING], mm_rv[MM_RING];
+static int          mm_rsz[MM_RING];
+static unsigned int mm_rp = 0;
+static FILE*        mm_fp = NULL;
+static int          mm_ndump = 0;
+void mm_cptrace_read(unsigned int address, unsigned int val, int size)
+{
+  unsigned int i = mm_rp & (MM_RING - 1);
+  mm_ra[i] = address; mm_rv[i] = val; mm_rsz[i] = size; mm_rp++;
+  /* optional READ-watch: dump the PC that reads a given work-RAM offset (MM_CPTRACE_RADDR) */
+  { static int mm_rwa = -2; static int mm_rwn = 0;
+    if (mm_rwa == -2) { const char* e = getenv("MM_CPTRACE_RADDR"); mm_rwa = e ? (int)strtol(e, 0, 0) : -1; }
+    if (mm_rwa >= 0 && (int)(address & 0xFFFF) == mm_rwa && ((address >> 16) & 0xFF) >= 0xE0 && mm_rwn < 40) {
+      mm_rwn++;
+      if (!mm_fp) { const char* p = getenv("MM_CPTRACE_FILE"); mm_fp = p ? fopen(p, "w") : stderr; if (!mm_fp) mm_fp = stderr; }
+      fprintf(mm_fp, "READ 0x%06X val=0x%X size=%d pc=0x%06X a0=0x%06X a1=0x%06X d0=0x%X\n",
+              address, val, size, m68ki_cpu.pc, m68ki_cpu.dar[8] & 0xFFFFFF, m68ki_cpu.dar[9] & 0xFFFFFF, m68ki_cpu.dar[0]);
+      fflush(mm_fp);
+    }
+  }
+}
+void mm_cptrace_write(unsigned int address, unsigned int value, unsigned int pc, int size)
+{
+  { static int mm_wa = -1;                        /* watch address (work-RAM offset), from MM_CPTRACE_ADDR env */
+    if (mm_wa < 0) { const char* e = getenv("MM_CPTRACE_ADDR"); mm_wa = e ? (int)strtol(e, 0, 0) : 0xA69C; }
+    if ((int)(address & 0xFFFF) != mm_wa) return; }
+  if (((address >> 16) & 0xFF) < 0xE0) return;    /* only the 68k work-RAM window (0xE0..0xFF) */
+  { static unsigned int mm_lastval = 0xFFFFFFFF;  /* dump only when the value CHANGES (diverse checkpoints) */
+    if (value == mm_lastval) return; mm_lastval = value; }
+  if (mm_ndump >= 60) return;
+  if (!mm_fp) { const char* p = getenv("MM_CPTRACE_FILE"); mm_fp = p ? fopen(p, "w") : stderr; if (!mm_fp) mm_fp = stderr; }
+  mm_ndump++;
+  { unsigned char* wr = (unsigned char*)m68ki_cpu.memory_map[0xFF].base;
+    unsigned p8a = (wr[0xBE8A]<<24)|(wr[0xBE8B]<<16)|(wr[0xBE8C]<<8)|wr[0xBE8D];
+    unsigned p8e = (wr[0xBE8E]<<24)|(wr[0xBE8F]<<16)|(wr[0xBE90]<<8)|wr[0xBE91];
+    fprintf(mm_fp, "WRITE val=0x%X pc=0x%06X a1=0x%06X d0=0x%X d1=0x%X  *0xBE8A=0x%06X *0xBE8E=0x%06X\n",
+            value, pc, m68ki_cpu.dar[9] & 0xFFFFFF, m68ki_cpu.dar[0], m68ki_cpu.dar[1], p8a & 0xFFFFFF, p8e & 0xFFFFFF); }
+  int N = 40;
+  for (int k = N; k >= 1; k--)
+  {
+    unsigned int idx = (mm_rp - (unsigned)k) & (MM_RING - 1);
+    fprintf(mm_fp, "  R a=0x%06X v=0x%06X s=%d\n", mm_ra[idx], mm_rv[idx], mm_rsz[idx]);
+  }
+  fflush(mm_fp);
+}
+#endif
 #include "m68kops.h"
 #include "../state.h"
 

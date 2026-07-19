@@ -1,4 +1,6 @@
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "state.h"
 
 __thread uint8_t VRAMBlockEnabled = 1;
@@ -689,17 +691,20 @@ int scd_context_load(uint8 *state, char *version)
 int vdp_context_save(uint8 *state)
 {
   int bufferptr = 0;
+  const int _dbgOff = getenv("GPGX_STATE_OFFSETS") != NULL;
+  #define VDBGOFF(name) do { if (_dbgOff) fprintf(stderr, "[STATE_OFFSET]   vdp.%-12s +%d (0x%X)\n", name, bufferptr, bufferptr); } while (0)
 
-  if (SATMBlockEnabled == 1) { save_param(sat, sizeof(sat)); }
+  if (SATMBlockEnabled == 1) { VDBGOFF("sat"); save_param(sat, sizeof(sat)); }
   if (VRAMBlockEnabled == 1)
   {
-    if (system_hw == 65) { save_param(vram, 0x4000); } 
+    VDBGOFF("vram");
+    if (system_hw == 65) { save_param(vram, 0x4000); }
     else { save_param(vram, sizeof(vram)); }
   }
-  save_param(cram, sizeof(cram));
-  save_param(vsram, sizeof(vsram));
-  save_param(reg, sizeof(reg));
-  save_param(&addr, sizeof(addr));
+  VDBGOFF("cram"); save_param(cram, sizeof(cram));
+  VDBGOFF("vsram"); save_param(vsram, sizeof(vsram));
+  VDBGOFF("reg"); save_param(reg, sizeof(reg));
+  VDBGOFF("scalars"); save_param(&addr, sizeof(addr));
   save_param(&addr_latch, sizeof(addr_latch));
   save_param(&code, sizeof(code));
   save_param(&pending, sizeof(pending));
@@ -1687,41 +1692,44 @@ int state_save(unsigned char *state)
 {
   /* buffer size */
   int bufferptr = 0;
+  const int _dbgOff = getenv("GPGX_STATE_OFFSETS") != NULL;
+  #define DBGOFF(name) do { if (_dbgOff) fprintf(stderr, "[STATE_OFFSET] %-16s %d (0x%X)\n", name, bufferptr, bufferptr); } while (0)
 
   /* version string */
   char version[16];
   memcpy(version,STATE_VERSION,16);
-  save_param(version, 16);
+  DBGOFF("version"); save_param(version, 16);
 
   /* SYSTEM */
-  save_param(&pause_b, sizeof(pause_b));
+  DBGOFF("pause_b"); save_param(&pause_b, sizeof(pause_b));
 
   /* GENESIS */
   if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
   {
-    save_param(work_ram, _workRAMSerializationSize);
-    save_param(zram, sizeof(zram));
-    save_param(&zstate, sizeof(zstate));
-    save_param(&zbank, sizeof(zbank));
+    DBGOFF("work_ram"); save_param(work_ram, _workRAMSerializationSize);
+    DBGOFF("zram"); save_param(zram, sizeof(zram));
+    DBGOFF("zstate"); save_param(&zstate, sizeof(zstate));
+    DBGOFF("zbank"); save_param(&zbank, sizeof(zbank));
   }
   else
   {
-    save_param(work_ram, 0x2000);
+    DBGOFF("work_ram_2k"); save_param(work_ram, 0x2000);
   }
 
   /* IO */
-  save_param(io_reg, sizeof(io_reg));
+  DBGOFF("io_reg"); save_param(io_reg, sizeof(io_reg));
 
   /* CONTROLLERS */
-  save_param(gamepad, sizeof(gamepad));
+  DBGOFF("gamepad"); save_param(gamepad, sizeof(gamepad));
 
   /* VDP */
-  bufferptr += vdp_context_save(&state[bufferptr]);
+  DBGOFF("vdp_ctx"); bufferptr += vdp_context_save(&state[bufferptr]);
 
   /* SOUND */
-  bufferptr += sound_context_save(&state[bufferptr]);
+  DBGOFF("sound_ctx"); bufferptr += sound_context_save(&state[bufferptr]);
 
-  /* 68000 */ 
+  /* 68000 */
+  DBGOFF("m68k_regs");
   if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
   {
     uint16 tmp16;
@@ -1753,10 +1761,11 @@ int state_save(unsigned char *state)
     save_param(&m68k.refresh_cycles, sizeof(m68k.refresh_cycles));
   }
 
-  /* Z80 */ 
-  save_param(&Z80, sizeof(Z80_Regs));
+  /* Z80 */
+  DBGOFF("z80_regs"); save_param(&Z80, sizeof(Z80_Regs));
 
   /* External HW */
+  DBGOFF("ext_hw");
   if (system_hw == SYSTEM_MCD)
   {
     /* CD hardware ID flag */

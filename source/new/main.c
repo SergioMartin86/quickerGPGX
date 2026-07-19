@@ -38,7 +38,6 @@ int joynum = 0;
 int log_error   = 0;
 int debug_on    = 0;
 int turbo_mode  = 0;
-int use_sound   = 1;
 int fullscreen  = 0; /* SDL_WINDOW_FULLSCREEN */
 
 struct {
@@ -49,14 +48,6 @@ struct {
   SDL_Rect drect;
   Uint32 frames_rendered;
 } sdl_video;
-
-/* sound */
-
-struct {
-  char* current_pos;
-  char* buffer;
-  int current_emulated_samples;
-} sdl_sound;
 
 
  uint8 brm_format[0x40] =
@@ -159,84 +150,11 @@ void set_config_defaults(void)
   }
 }
 
- void sdl_sound_callback(void *userdata, Uint8 *stream, int len)
+/* Core sound clock: advances the emulated sound chips (YM2612/PSG) up to the current cycle so that game logic
+ * reading their timer/status remains correct. Kept for emulation determinism; there is no SDL audio output. */
+static void gpgxSoundClock(void)
 {
-  if(sdl_sound.current_emulated_samples < len) {
-    memset(stream, 0, len);
-  }
-  else {
-    memcpy(stream, sdl_sound.buffer, len);
-    /* loop to compensate desync */
-    do {
-      sdl_sound.current_emulated_samples -= len;
-    } while(sdl_sound.current_emulated_samples > 2 * len);
-    memcpy(sdl_sound.buffer,
-           sdl_sound.current_pos - sdl_sound.current_emulated_samples,
-           sdl_sound.current_emulated_samples);
-    sdl_sound.current_pos = sdl_sound.buffer + sdl_sound.current_emulated_samples;
-  }
-}
-
- int sdl_sound_init()
-{
-  int n;
-  SDL_AudioSpec as_desired;
-
-  if(SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "SDL Audio initialization failed", sdl_video.window);
-    return 0;
-  }
-
-  as_desired.freq     = SOUND_FREQUENCY;
-  as_desired.format   = AUDIO_S16SYS;
-  as_desired.channels = 2;
-  as_desired.samples  = SOUND_SAMPLES_SIZE;
-  as_desired.callback = sdl_sound_callback;
-
-  if(SDL_OpenAudio(&as_desired, NULL) < 0) {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "SDL Audio open failed", sdl_video.window);
-    return 0;
-  }
-
-  sdl_sound.current_emulated_samples = 0;
-  n = SOUND_SAMPLES_SIZE * 2 * sizeof(short) * 20;
-  sdl_sound.buffer = (char*)malloc(n);
-  if(!sdl_sound.buffer) {
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Can't allocate audio buffer", sdl_video.window);
-    return 0;
-  }
-  memset(sdl_sound.buffer, 0, n);
-  sdl_sound.current_pos = sdl_sound.buffer;
-  return 1;
-}
-
- void sdl_sound_update(int enabled)
-{
-  int size = audio_update(soundframe) * 2;
-
-  if (enabled)
-  {
-    int i;
-    short *out;
-
-    SDL_LockAudio();
-    out = (short*)sdl_sound.current_pos;
-    for(i = 0; i < size; i++)
-    {
-      *out++ = soundframe[i];
-    }
-    sdl_sound.current_pos = (char*)out;
-    sdl_sound.current_emulated_samples += size * sizeof(short);
-    SDL_UnlockAudio();
-  }
-}
-
- void sdl_sound_close()
-{
-  SDL_PauseAudio(1);
-  SDL_CloseAudio();
-  if (sdl_sound.buffer)
-    free(sdl_sound.buffer);
+  audio_update(soundframe);
 }
 
 /* video */
@@ -267,6 +185,10 @@ sms_ntsc_t *sms_ntsc;
   return 1;
 }
 
+// Headless rendering flag (see gpgxEnableHeadlessRender): when set, frames are painted into bitmap.data with
+// do_skip=0 and NO SDL window/blit, so offline screenshots work without a display.
+int __gpgxHeadlessRender = 0;
+
  void sdl_video_update()
 {
   if (system_hw == SYSTEM_MCD)
@@ -277,10 +199,13 @@ sms_ntsc_t *sms_ntsc;
   {
     system_frame_gen(0);
   }
-  else	
+  else
   {
     system_frame_sms(0);
   }
+
+  /* Headless mode: the frame is now rendered into bitmap.data; skip the SDL surface blit (no window exists). */
+  if (__gpgxHeadlessRender) return;
 
   /* viewport size changed */
   if(bitmap.viewport.changed & 1)
@@ -456,12 +381,6 @@ struct {
         break;
       }
 
-      case SDLK_F4:
-      {
-        if (!turbo_mode) use_sound ^= 1;
-        break;
-      }
-
       case SDLK_F5:
       {
         log_error ^= 1;
@@ -470,11 +389,8 @@ struct {
 
       case SDLK_F6:
       {
-        if (!use_sound)
-        {
-          turbo_mode ^=1;
-          sdl_sync.ticks = 0;
-        }
+        turbo_mode ^= 1;
+        sdl_sync.ticks = 0;
         break;
       }
 
@@ -667,7 +583,6 @@ void initializeVideoOutput()
     return;
   }
   sdl_video_init();
-  if (use_sound) sdl_sound_init();
   sdl_sync_init();
 
   /* initialize Genesis virtual system */
@@ -770,14 +685,25 @@ void loadROM(const char* filePath)
 
     /* reset system hardware */
     system_reset();
-
-    if(use_sound) SDL_PauseAudio(0);
 }
 
 void renderFrame()
 {
   sdl_video_update();
-  sdl_sound_update(use_sound);
+  gpgxSoundClock();
+}
+
+// Headless rendering: enabling makes advanceFrame emulate with do_skip=0 so the VDP paints frames into
+// bitmap.data (no SDL window/display involved). Used only for offline screenshots (see gpgxSaveScreenshotBMP).
+// (The __gpgxHeadlessRender flag itself is defined above, before sdl_video_update, which also honors it.)
+void gpgxEnableHeadlessRender()
+{
+  /* bitmap.data was already allocated (1024*1024*4) in initialize(); just set the geometry the VDP renders into. */
+  bitmap.width            = 720;
+  bitmap.height           = 576;
+  bitmap.pitch            = bitmap.width * 4; /* 32bpp (USE_32BPP_RENDERING) */
+  bitmap.viewport.changed = 3;
+  __gpgxHeadlessRender    = 1;
 }
 
 void advanceFrame(const uint16_t controller1, const uint16_t controller2)
@@ -785,26 +711,72 @@ void advanceFrame(const uint16_t controller1, const uint16_t controller2)
   __tmpInput->pad[0] = controller1;
   __tmpInput->pad[1] = controller2;
 
+  const int do_skip = __gpgxHeadlessRender ? 0 : 1;
+
   if (system_hw == SYSTEM_MCD)
   {
-    system_frame_scd(1);
+    system_frame_scd(do_skip);
   }
   else if ((system_hw & SYSTEM_PBC) == SYSTEM_MD)
   {
-    system_frame_gen(1);
+    system_frame_gen(do_skip);
   }
-  else	
+  else
   {
-    system_frame_sms(1);
+    system_frame_sms(do_skip);
   }
 
-  sdl_sound_update(0);
+  gpgxSoundClock();
+}
+
+// Write the current rendered frame (bitmap.data, 32bpp RGB888) to a 24-bit BMP. Only the active viewport is saved.
+void gpgxSaveScreenshotBMP(const char* path)
+{
+  int vx = bitmap.viewport.x, vy = bitmap.viewport.y;
+  int w  = bitmap.viewport.w, h = bitmap.viewport.h;
+  if (w <= 0 || h <= 0 || bitmap.data == NULL) { return; }
+
+  const int rowBytes = (w * 3 + 3) & ~3;          /* padded to 4 bytes */
+  const int imgSize  = rowBytes * h;
+  const int fileSize = 54 + imgSize;
+
+  unsigned char hdr[54] = {0};
+  hdr[0] = 'B'; hdr[1] = 'M';
+  hdr[2] = fileSize & 0xFF; hdr[3] = (fileSize >> 8) & 0xFF; hdr[4] = (fileSize >> 16) & 0xFF; hdr[5] = (fileSize >> 24) & 0xFF;
+  hdr[10] = 54;                                    /* pixel data offset */
+  hdr[14] = 40;                                    /* DIB header size */
+  hdr[18] = w & 0xFF; hdr[19] = (w >> 8) & 0xFF; hdr[20] = (w >> 16) & 0xFF; hdr[21] = (w >> 24) & 0xFF;
+  hdr[22] = h & 0xFF; hdr[23] = (h >> 8) & 0xFF; hdr[24] = (h >> 16) & 0xFF; hdr[25] = (h >> 24) & 0xFF;
+  hdr[26] = 1;                                     /* planes */
+  hdr[28] = 24;                                    /* bpp */
+  hdr[34] = imgSize & 0xFF; hdr[35] = (imgSize >> 8) & 0xFF; hdr[36] = (imgSize >> 16) & 0xFF; hdr[37] = (imgSize >> 24) & 0xFF;
+
+  FILE* f = fopen(path, "wb");
+  if (f == NULL) { return; }
+  fwrite(hdr, 1, 54, f);
+
+  const unsigned int* px = (const unsigned int*)bitmap.data;
+  const int           stride = bitmap.pitch / 4;
+  unsigned char*      row    = (unsigned char*)malloc(rowBytes);
+  for (int r = h - 1; r >= 0; r--)                 /* BMP rows are bottom-up */
+  {
+    memset(row, 0, rowBytes);
+    for (int c = 0; c < w; c++)
+    {
+      const unsigned int p = px[(vy + r) * stride + (vx + c)];
+      row[c * 3 + 0] = p & 0xFF;                   /* B */
+      row[c * 3 + 1] = (p >> 8) & 0xFF;            /* G */
+      row[c * 3 + 2] = (p >> 16) & 0xFF;           /* R */
+    }
+    fwrite(row, 1, rowBytes, f);
+  }
+  free(row);
+  fclose(f);
 }
 
 void finalizeVideoOutput()
 {
   sdl_video_close();
-  sdl_sound_close();
   sdl_sync_close();
   SDL_Quit();
 }
@@ -863,7 +835,6 @@ int oldMain (int argc, char **argv)
     return 1;
   }
   sdl_video_init();
-  if (use_sound) sdl_sound_init();
   sdl_sync_init();
 
   /* initialize Genesis virtual system */
@@ -962,8 +933,6 @@ int oldMain (int argc, char **argv)
   /* reset system hardware */
   system_reset();
 
-  if(use_sound) SDL_PauseAudio(0);
-
   /* 3 frames = 50 ms (60hz) or 60 ms (50hz) */
   if(sdl_sync.sem_sync)
     SDL_AddTimer(vdp_pal ? 60 : 50, sdl_sync_timer_callback, NULL);
@@ -999,7 +968,7 @@ int oldMain (int argc, char **argv)
     }
 
     sdl_video_update();
-    sdl_sound_update(use_sound);
+    gpgxSoundClock();
 
     if(!turbo_mode && sdl_sync.sem_sync && sdl_video.frames_rendered % 3 == 0)
     {
@@ -1049,7 +1018,6 @@ int oldMain (int argc, char **argv)
   audio_shutdown();
 
   sdl_video_close();
-  sdl_sound_close();
   sdl_sync_close();
   SDL_Quit();
 
